@@ -21,8 +21,6 @@ using SampledExample = std::reference_wrapper<const Example<Feature, Label>>;
 
 // A comparator which compares the i'th feature of two sampled examples using
 // Cmp.
-// TODO Can this work for both sampled and non-sampled examples?  Maybe an
-// overload?
 template <typename Feature, typename Label, typename Cmp = std::less<Feature>>
 class CompareOnFeature {
  public:
@@ -31,6 +29,11 @@ class CompareOnFeature {
   bool operator()(const SampledExample<Feature, Label>& lhs,
                   const SampledExample<Feature, Label>& rhs) const {
     return cmp(lhs.get().features[fx], rhs.get().features[fx]);
+  }
+
+  bool operator()(const Example<Feature, Label>& lhs,
+                  const Example<Feature, Label>& rhs) const {
+    return cmp(lhs.features[fx], rhs.features[fx]);
   }
 
  private:

@@ -29,7 +29,7 @@ class DecisionForest {
   void train(const DataSet<Feature, Label>& data_set) {
     std::vector<std::future<int>> futures;
     for (auto& tree : trees_) {
-      futures.emplace_back(thread_pool_.Add([&data_set, &tree]() {
+      futures.emplace_back(thread_pool_.add([&data_set, &tree]() {
         auto sample = sample_with_replacement(data_set, data_set.size());
         tree.train(sample);
         return 1;
