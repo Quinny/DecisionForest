@@ -2,16 +2,35 @@
 #define FUNCTIONAL_H
 
 #include <functional>
+#include <type_traits>
 #include <utility>
 
 namespace qp {
 namespace rf {
 
+template <typename Arg, typename Comb, typename F>
+class On {
+ public:
+  using return_type = typename std::result_of<Comb(
+      typename std::result_of<F(Arg)>::type,
+      typename std::result_of<F(Arg)>::type)>::type;
+
+  return_type operator()(const Arg& arg1, const Arg& arg2) const {
+    return c(f(arg1), f(arg2));
+  }
+
+ private:
+  F f;
+  Comb c;
+};
+
+template <typename T, typename U>
+struct Snd {
+  const U& operator()(const std::pair<T, U>& p) const { return p.second; }
+};
+
 template <typename T, typename U, typename Cmp = std::less<U>>
-bool compare_on_second(const std::pair<T, U>& lhs, const std::pair<T, U>& rhs) {
-  Cmp c;
-  return c(lhs.second, rhs.second);
-}
+using CompareOnSecond = On<std::pair<T, U>, Cmp, Snd<T, U>>;
 
 }  // namespace rf
 }  // namespace qp

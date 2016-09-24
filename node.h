@@ -27,19 +27,25 @@ class DecisionNode {
  public:
   DecisionNode(){};
 
-  void compute_probabilities(const SampledDataSet<Feature, Label>& dataset,
-                             std::size_t start, std::size_t end) {
+  // Set the prediction of this node based on the data it recieves.
+  void set_prediction(const SampledDataSet<Feature, Label>& dataset,
+                      std::size_t start, std::size_t end) {
+    std::map<Label, int> label_occurances;
     for (auto i = start; i < end; ++i) {
-      label_probabilities_[dataset[i].get().label] +=
-          1 / static_cast<double>(end - start + 1);
+      ++label_occurances[dataset[i].get().label];
     }
+
+    auto most_occuring =
+        std::max_element(label_occurances.begin(), label_occurances.end(),
+                         CompareOnSecond<Label, int>());
+    prediction_ = most_occuring->first;
   }
 
   // Train this node to decide on the dataset rows between start and end.
   // TODO - Only on a subset of features too.
   void train(const SampledDataSet<Feature, Label>& dataset, std::size_t start,
              std::size_t end) {
-    compute_probabilities(dataset, start, end);
+    set_prediction(dataset, start, end);
     double min_impurity = 1000;
     auto total_samples = static_cast<double>(dataset.size());
 
@@ -76,18 +82,11 @@ class DecisionNode {
   }
 
   // Predict the label at this node based on probabilities.
-  Label predict() const {
-    auto prediction_probability = std::max_element(
-        label_probabilities_.begin(), label_probabilities_.end(),
-        compare_on_second<Label, double>);
-    return prediction_probability->first;
-  }
+  Label predict() const { return prediction_; }
 
  private:
-  // bool leaf_node_;
-  Label final_label_;
+  Label prediction_;
   SplitterFn splitter_;
-  std::map<Label, double> label_probabilities_;
 };
 
 }  // namespace rf

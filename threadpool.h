@@ -21,7 +21,7 @@ class Threadpool {
   Threadpool(int n_threads);
 
   // Add work to the queue.  Returns a future to the results.
-  std::future<ReturnValue> Add(const WorkType& work);
+  std::future<ReturnValue> add(const WorkType& work);
 
   // Shuts down the threadpool.  All tasks currently being executed will finish
   // and all threads will be joined.  All tasks still in the queue will be
@@ -36,34 +36,35 @@ class Threadpool {
   std::condition_variable work_added_;
 
   // Worker function which actually carries out the tasks.
-  void Worker();
+  void worker();
 };
 
 template <typename T>
 Threadpool<T>::Threadpool() {
   const auto threads = std::thread::hardware_concurrency();
   for (int i = 0; i < threads; ++i) {
-    threads_.emplace_back(&Threadpool::Worker, this);
+    threads_.emplace_back(&Threadpool::worker, this);
   }
 }
 
 template <typename T>
 Threadpool<T>::Threadpool(int n_threads) {
   for (int i = 0; i < n_threads; ++i) {
-    threads_.emplace_back(&Threadpool::Worker, this);
+    threads_.emplace_back(&Threadpool::worker, this);
   }
 }
 
 template <typename T>
-std::future<T> Threadpool<T>::Add(const WorkType& work) {
+std::future<T> Threadpool<T>::add(const WorkType& work) {
   std::lock_guard<std::mutex> lock(mu_);
   work_queue_.emplace(work, std::promise<T>{});
   work_added_.notify_one();
   return work_queue_.back().second.get_future();
 }
 
+// TODO - Does not work when T is void.
 template <typename T>
-void Threadpool<T>::Worker() {
+void Threadpool<T>::worker() {
   while (true) {
     std::unique_lock<std::mutex> lock(mu_);
     if (shutdown_) {

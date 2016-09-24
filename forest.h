@@ -10,6 +10,12 @@
 namespace qp {
 namespace rf {
 
+// A collection of decision trees which each cast a vote towards the final
+// classificaiton of a sample.  Each tree is trained on a bagged (Bootstrap
+// aggregated) sample of the original data set. Tree training is run in parallel
+// using N threads, where N is the number of cores on the host machine.
+//
+// https://en.wikipedia.org/wiki/Bootstrap_aggregating
 template <typename Feature, typename Label, typename SpiltterFn>
 class DecisionForest {
  public:
@@ -19,6 +25,7 @@ class DecisionForest {
     }
   }
 
+  // Train each tree in parallel on a bagged sample of the dataset.
   void train(const DataSet<Feature, Label>& data_set) {
     std::vector<std::future<int>> futures;
     for (auto& tree : trees_) {
@@ -29,6 +36,7 @@ class DecisionForest {
       }));
     }
 
+    // Thread pool futures are non-blocking.
     for (auto& fut : futures) {
       fut.wait();
     }
@@ -42,7 +50,7 @@ class DecisionForest {
     }
 
     auto prediction = std::max_element(predictions.begin(), predictions.end(),
-                                       compare_on_second<Label, int>);
+                                       CompareOnSecond<Label, int>());
     return prediction->first;
   }
 
