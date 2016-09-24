@@ -1,0 +1,3 @@
+SplitterFn
+  - Train(dataset, start, end) : void
+  - Apply(features) : splitdirection
