@@ -43,8 +43,8 @@ class DecisionTree {
                   /* end=*/data_set.size());
   }
 
-  // TODO will removing the explicit recursion speed this up?
-  // Probably.  I should do that.
+  // Eliminating the explicit recursion did not provide any speed ups.  The
+  // depth is pretty shallow.
   void train_recurse(SampledDataSet<Feature, Label>& data_set,
                      std::size_t node_index, std::size_t start,
                      std::size_t end) {
