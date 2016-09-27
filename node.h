@@ -17,11 +17,7 @@ const int splits_to_try = 20;
 enum class SplitDirection { LEFT, RIGHT };
 
 // Represents a single node in a tree.
-// TODO
-//  - Premature decision making based on probability
-//    - If this node was trained on 70% class 1, and 20% class 2, we are that
-//      sure that example that makes it here belongs to either class.
-// - Only decide on a subset of features.
+// TODO Only decide on a subset of features.
 template <typename Feature, typename Label, typename SplitterFn>
 class DecisionNode {
  public:
@@ -42,7 +38,6 @@ class DecisionNode {
   }
 
   // Train this node to decide on the dataset rows between start and end.
-  // TODO - Only on a subset of features too.
   void train(const SampledDataSet<Feature, Label>& dataset, std::size_t start,
              std::size_t end) {
     set_prediction(dataset, start, end);
@@ -76,7 +71,7 @@ class DecisionNode {
     }
   }
 
-  // Name pending...
+  // Determine the direction of the split based on the feautres.
   SplitDirection split_direction(const std::vector<Feature>& features) const {
     return splitter_.apply(features);
   }

@@ -69,7 +69,8 @@ SampledDataSet<Feature, Label> sample_with_replacement(
     const DataSet<Feature, Label>& data_set, std::size_t n) {
   SampledDataSet<Feature, Label> sample;
   for (std::size_t i = 0; i < n; ++i) {
-    sample.push_back(data_set[random_range(0ul, data_set.size() - 1)]);
+    sample.push_back(
+        data_set[random_range<std::size_t>(0ul, data_set.size() - 1)]);
   }
   return sample;
 }

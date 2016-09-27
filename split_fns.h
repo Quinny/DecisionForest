@@ -8,6 +8,8 @@
 namespace qp {
 namespace rf {
 
+// Splits on N features randomly.
+// TODO Template for feauture and label.
 template <int N>
 class NDimensionalSplit {
  public:
@@ -15,13 +17,13 @@ class NDimensionalSplit {
              std::size_t e) {
     for (int i = 0; i < N; ++i) {
       auto feature_index =
-          qp::rf::random_range(0ul, set.front().get().features.size());
+          qp::rf::random_range<int>(0ul, set.front().get().features.size());
       auto feature_range = std::minmax_element(
           set.begin() + s, set.begin() + e,
           qp::rf::CompareOnFeature<int, int>(feature_index));
       auto low = feature_range.first->get().features[feature_index];
       auto high = feature_range.second->get().features[feature_index];
-      auto threshold = qp::rf::random_range(low, high);
+      auto threshold = qp::rf::random_range<int>(low, high);
 
       feature_indexes.emplace_back(feature_index);
       thresholds.emplace_back(threshold);

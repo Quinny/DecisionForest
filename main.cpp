@@ -5,6 +5,7 @@
 #include "forest.h"
 #include "split_fns.h"
 
+// TODO command line arguments.
 int main() {
   std::ifstream training_stream("../mnist/mnist_train.csv");
   std::ifstream testing_stream("../mnist/mnist_test.csv");
