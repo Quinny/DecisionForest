@@ -15,6 +15,14 @@ T random_range(const T& first, const T& last) {
   return dist(gen);
 }
 
+// TODO can i make this work without two functions?
+template <typename T>
+T random_real_range(const T& first, const T& last) {
+  static std::knuth_b gen(std::time(nullptr));
+  std::uniform_real_distribution<T> dist(first, last);
+  return dist(gen);
+}
+
 }  // namespace rf
 }  // namespace qp
 

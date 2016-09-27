@@ -1,7 +1,11 @@
 #ifndef DATASET_H
 #define DATASET_H
 
+#include <algorithm>
+#include <unordered_map>
 #include <vector>
+
+#include "functional.h"
 #include "random.h"
 
 namespace qp {
@@ -73,6 +77,20 @@ SampledDataSet<Feature, Label> sample_with_replacement(
         data_set[random_range<std::size_t>(0ul, data_set.size() - 1)]);
   }
   return sample;
+}
+
+template <typename Feature, typename Label,
+          typename Iter = typename SampledDataSet<Feature, Label>::iterator>
+Label mode_on_label(Iter start, Iter end) {
+  std::unordered_map<Label, int> histogram;
+  while (start != end) {
+    ++histogram[start->get().label];
+    ++start;
+  }
+
+  auto mode = std::max_element(histogram.begin(), histogram.end(),
+                               CompareOnSecond<Label, int>());
+  return mode->first;
 }
 
 }  // namespace rf

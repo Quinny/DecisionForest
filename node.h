@@ -2,8 +2,9 @@
 #define NODE_H
 
 #include <algorithm>
+#include <cassert>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 
 #include "criterion.h"
 #include "dataset.h"
@@ -23,24 +24,12 @@ class DecisionNode {
  public:
   DecisionNode(){};
 
-  // Set the prediction of this node based on the data it recieves.
-  void set_prediction(const SampledDataSet<Feature, Label>& dataset,
-                      std::size_t start, std::size_t end) {
-    std::map<Label, int> label_occurances;
-    for (auto i = start; i < end; ++i) {
-      ++label_occurances[dataset[i].get().label];
-    }
-
-    auto most_occuring =
-        std::max_element(label_occurances.begin(), label_occurances.end(),
-                         CompareOnSecond<Label, int>());
-    prediction_ = most_occuring->first;
-  }
-
   // Train this node to decide on the dataset rows between start and end.
   void train(const SampledDataSet<Feature, Label>& dataset, std::size_t start,
              std::size_t end) {
-    set_prediction(dataset, start, end);
+    prediction_ = mode_on_label<Feature, Label>(dataset.begin() + start,
+                                                dataset.begin() + end);
+    // set_prediction(dataset, start, end);
     double min_impurity = 1000;
     auto total_samples = static_cast<double>(dataset.size());
 

@@ -16,8 +16,10 @@ int main() {
   auto testing =
       qp::rf::read_csv_data_set<int, int>(testing_stream, 10000, 784);
 
-  qp::rf::DecisionForest<int, int, qp::rf::NDimensionalSplit<1>> forest(100,
-                                                                        15);
+  qp::rf::DecisionForest<int, int, qp::rf::PerceptronSplit<2>> forest(100, 15);
+
+  // qp::rf::DecisionForest<int, int, qp::rf::NDimensionalSplit<1>> forest(100,
+  //                                                                      15);
   std::cout << "training..." << std::endl;
   forest.train(training);
 
