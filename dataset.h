@@ -96,6 +96,7 @@ Label mode_label(Iter start, Iter end) {
   return mode->first;
 }
 
+// Determines if the dataset contains a single label.
 template <typename Feature, typename Label,
           typename Iter = typename SampledDataSet<Feature, Label>::iterator>
 bool single_label(Iter start, Iter end) {

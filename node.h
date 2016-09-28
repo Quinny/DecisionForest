@@ -30,18 +30,19 @@ class DecisionNode {
     prediction_ = mode_label<Feature, Label>(dataset.begin() + start,
                                              dataset.begin() + end);
 
-    // If the dataset only contains one label, then there is not point in
-    // training this node.
+    // If the dataset only contains one label, then there is no point in
+    // training this node, we can predict early.
     if (single_label<Feature, Label>(dataset.begin() + start,
                                      dataset.begin() + end)) {
       leaf_ = true;
       return;
     }
 
-    // set_prediction(dataset, start, end);
     double min_impurity = 1000;
     auto total_samples = static_cast<double>(end - start + 1);
 
+    // Try different split functions and choose the one which results in the
+    // least impurity.
     for (int i = 0; i < splits_to_try; ++i) {
       SplitterFn candidate_split;
       candidate_split.train(dataset, start, end);
