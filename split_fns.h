@@ -44,11 +44,11 @@ class NDimensionalSplit {
   std::vector<int> thresholds;
 };
 
-template <int N>
+template <typename Feature, typename Label, int N>
 class PerceptronSplit {
  public:
-  void train(const qp::rf::SampledDataSet<int, int>& data_set, std::size_t s,
-             std::size_t e) {
+  void train(const qp::rf::SampledDataSet<Feature, Label>& data_set,
+             std::size_t s, std::size_t e) {
     for (int i = 0; i < N; ++i) {
       feature_indicies_.push_back(random_range<FeatureIndex>(
           0, data_set.front().get().features.size()));
@@ -58,7 +58,7 @@ class PerceptronSplit {
     learning_rate_ = random_real_range<double>(0, 1);
 
     const auto should_go_left =
-        mode_label<int, int>(data_set.begin() + s, data_set.begin() + e);
+        mode_label<Feature, Label>(data_set.begin() + s, data_set.begin() + e);
     for (unsigned i = s; i < e; ++i) {
       show(data_set[i].get().features, data_set[i].get().label == should_go_left
                                            ? qp::rf::SplitDirection::LEFT
@@ -66,12 +66,13 @@ class PerceptronSplit {
     }
   }
 
-  void show(const std::vector<int>& features, qp::rf::SplitDirection label) {
+  void show(const std::vector<Feature>& features,
+            qp::rf::SplitDirection label) {
     auto output = apply(features);
     adjust(features, static_cast<int>(label) - static_cast<int>(output));
   }
 
-  void adjust(const std::vector<int>& features, int error) {
+  void adjust(const std::vector<Feature>& features, int error) {
     for (unsigned i = 0; i < weights_.size(); ++i) {
       weights_[i] = weights_[i] +
                     (learning_rate_ * error * features[feature_indicies_[i]]);
@@ -79,7 +80,7 @@ class PerceptronSplit {
     bias_ = bias_ + (learning_rate_ * error);
   }
 
-  qp::rf::SplitDirection apply(const std::vector<int>& features) const {
+  qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
     double sum = 0;
     for (unsigned i = 0; i < feature_indicies_.size(); ++i) {
       sum += features[feature_indicies_[i]] * weights_[i];
