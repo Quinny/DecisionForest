@@ -7,8 +7,8 @@
 
 // TODO command line arguments.
 int main() {
-  std::ifstream training_stream("../mnist/mnist_train.csv");
-  std::ifstream testing_stream("../mnist/mnist_test.csv");
+  std::ifstream training_stream("mnist_train.csv");
+  std::ifstream testing_stream("mnist_test.csv");
 
   std::cout << "reading data..." << std::endl;
   auto training =
@@ -16,7 +16,8 @@ int main() {
   auto testing =
       qp::rf::read_csv_data_set<int, int>(testing_stream, 10000, 784);
 
-  qp::rf::DecisionForest<int, int, qp::rf::PerceptronSplit<2>> forest(100, 15);
+  qp::rf::DecisionForest<int, int, qp::rf::PerceptronSplit<1>> forest(
+      /* trees=*/200, /*max_depth=*/17);
 
   // qp::rf::DecisionForest<int, int, qp::rf::NDimensionalSplit<1>> forest(100,
   //                                                                      15);

@@ -55,7 +55,7 @@ class PerceptronSplit {
       weights.push_back(random_real_range<double>(-1, 1));
     }
     threshold = random_real_range<double>(-1, 1);
-    learning_rate = random_real_range<double>(0, 0.5);
+    learning_rate = random_real_range<double>(0, 1);
 
     auto should_go_left =
         mode_on_label<int, int>(data_set.begin() + s, data_set.begin() + e);
