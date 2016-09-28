@@ -23,12 +23,15 @@ struct Example {
 template <typename Feature, typename Label>
 using SampledExample = std::reference_wrapper<const Example<Feature, Label>>;
 
+// For readability.
+using FeatureIndex = std::size_t;
+
 // A comparator which compares the i'th feature of two sampled examples using
 // Cmp.
 template <typename Feature, typename Label, typename Cmp = std::less<Feature>>
 class CompareOnFeature {
  public:
-  CompareOnFeature(std::size_t i) : fx(i) {}
+  CompareOnFeature(FeatureIndex i) : fx(i) {}
 
   bool operator()(const SampledExample<Feature, Label>& lhs,
                   const SampledExample<Feature, Label>& rhs) const {
@@ -42,7 +45,7 @@ class CompareOnFeature {
 
  private:
   Cmp cmp;
-  std::size_t fx;
+  FeatureIndex fx;
 };
 
 // A dataset is defined as a collection of training examples.
@@ -56,11 +59,10 @@ template <typename Feature, typename Label>
 using SampledDataSet = std::vector<SampledExample<Feature, Label>>;
 
 // Generates an empty dataset with n_samples, each containing n_features.
-template <typename Feature, typename Label,
-          template <typename, typename> class DataSetT = DataSet>
-DataSetT<Feature, Label> empty_data_set(std::size_t n_samples,
-                                        std::size_t n_features) {
-  DataSetT<Feature, Label> data_set(n_samples);
+template <typename Feature, typename Label>
+DataSet<Feature, Label> empty_data_set(std::size_t n_samples,
+                                       std::size_t n_features) {
+  DataSet<Feature, Label> data_set(n_samples);
   for (auto& example : data_set) {
     example.features.resize(n_features);
   }
@@ -81,7 +83,7 @@ SampledDataSet<Feature, Label> sample_with_replacement(
 
 template <typename Feature, typename Label,
           typename Iter = typename SampledDataSet<Feature, Label>::iterator>
-Label mode_on_label(Iter start, Iter end) {
+Label mode_label(Iter start, Iter end) {
   std::unordered_map<Label, int> histogram;
   while (start != end) {
     ++histogram[start->get().label];

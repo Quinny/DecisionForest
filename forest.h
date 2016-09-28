@@ -42,7 +42,6 @@ class DecisionForest {
     }
   }
 
-  // TODO parallel
   Label predict(const std::vector<Feature>& features) {
     std::map<Label, int> predictions;
     for (const auto& tree : trees_) {

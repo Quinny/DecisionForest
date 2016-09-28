@@ -50,15 +50,15 @@ class PerceptronSplit {
   void train(const qp::rf::SampledDataSet<int, int>& data_set, std::size_t s,
              std::size_t e) {
     for (int i = 0; i < N; ++i) {
-      feature_indicies.push_back(
-          random_range<int>(0, data_set.front().get().features.size()));
-      weights.push_back(random_real_range<double>(-1, 1));
+      feature_indicies_.push_back(
+          random_range<FeatureIndex>(0, data_set.front().get().features.size()));
+      weights_.push_back(random_real_range<double>(-1, 1));
     }
-    threshold = random_real_range<double>(-1, 1);
-    learning_rate = random_real_range<double>(0, 1);
+    bias_ = random_real_range<double>(-1, 1);
+    learning_rate_ = random_real_range<double>(0, 1);
 
-    auto should_go_left =
-        mode_on_label<int, int>(data_set.begin() + s, data_set.begin() + e);
+    const auto should_go_left =
+        mode_label<int, int>(data_set.begin() + s, data_set.begin() + e);
     for (unsigned i = s; i < e; ++i) {
       show(data_set[i].get().features, data_set[i].get().label == should_go_left
                                            ? qp::rf::SplitDirection::LEFT
@@ -72,28 +72,28 @@ class PerceptronSplit {
   }
 
   void adjust(const std::vector<int>& features, int error) {
-    for (unsigned i = 0; i < weights.size(); ++i) {
-      weights[i] =
-          weights[i] + (learning_rate * error * features[feature_indicies[i]]);
+    for (unsigned i = 0; i < weights_.size(); ++i) {
+      weights_[i] =
+          weights_[i] + (learning_rate_ * error * features[feature_indicies_[i]]);
     }
-    threshold = threshold + (learning_rate * error);
+    bias_ = bias_ + (learning_rate_ * error);
   }
 
   qp::rf::SplitDirection apply(const std::vector<int>& features) const {
     double sum = 0;
-    for (unsigned i = 0; i < feature_indicies.size(); ++i) {
-      sum += features[feature_indicies[i]] * weights[i];
+    for (unsigned i = 0; i < feature_indicies_.size(); ++i) {
+      sum += features[feature_indicies_[i]] * weights_[i];
     }
 
-    return sum > threshold ? qp::rf::SplitDirection::LEFT
+    return sum > bias_ ? qp::rf::SplitDirection::LEFT
                            : qp::rf::SplitDirection::RIGHT;
   }
 
  private:
-  std::vector<int> feature_indicies;
-  std::vector<double> weights;
-  double threshold;
-  double learning_rate;
+  std::vector<FeatureIndex> feature_indicies_;
+  std::vector<double> weights_;
+  double bias_;
+  double learning_rate_;
 };
 
 }  // namespace rf

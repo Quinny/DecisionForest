@@ -27,7 +27,7 @@ class DecisionNode {
   // Train this node to decide on the dataset rows between start and end.
   void train(const SampledDataSet<Feature, Label>& dataset, std::size_t start,
              std::size_t end) {
-    prediction_ = mode_on_label<Feature, Label>(dataset.begin() + start,
+    prediction_ = mode_label<Feature, Label>(dataset.begin() + start,
                                                 dataset.begin() + end);
     // set_prediction(dataset, start, end);
     double min_impurity = 1000;
