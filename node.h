@@ -24,11 +24,24 @@ class DecisionNode {
  public:
   DecisionNode(){};
 
+  bool one_label(const SampledDataSet<Feature, Label>& dataset,
+                 std::size_t start, std::size_t end) const {
+    auto first_label = dataset[start].get().label;
+    return std::all_of(dataset.begin() + start, dataset.begin() + end,
+                       [&first_label](const auto& example) {
+                         return example.get().label == first_label;
+                       });
+  }
   // Train this node to decide on the dataset rows between start and end.
   void train(const SampledDataSet<Feature, Label>& dataset, std::size_t start,
              std::size_t end) {
     prediction_ = mode_label<Feature, Label>(dataset.begin() + start,
-                                                dataset.begin() + end);
+                                             dataset.begin() + end);
+    if (one_label(dataset, start, end)) {
+      leaf_ = true;
+      return;
+    }
+
     // set_prediction(dataset, start, end);
     double min_impurity = 1000;
     auto total_samples = static_cast<double>(dataset.size());
@@ -68,9 +81,12 @@ class DecisionNode {
   // Predict the label at this node based on probabilities.
   Label predict() const { return prediction_; }
 
+  bool leaf() const { return leaf_; }
+
  private:
   Label prediction_;
   SplitterFn splitter_;
+  bool leaf_ = false;
 };
 
 }  // namespace rf

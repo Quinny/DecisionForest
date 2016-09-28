@@ -17,7 +17,9 @@ class DecisionTree {
   DecisionTree(std::size_t depth) : nodes_(std::pow(2, depth + 1) - 1) {}
 
   // Checks if a given node index is a leaf.
-  bool is_leaf(std::size_t i) const { return 2 * i + 1 >= nodes_.size(); }
+  bool is_leaf(std::size_t i) const {
+    return nodes_[i].leaf() || 2 * i + 1 >= nodes_.size();
+  }
 
   // Given a direction and a node index, return the index of the corresponding
   // child.
@@ -54,6 +56,8 @@ class DecisionTree {
 
     // Train the current node.
     nodes_[node_index].train(data_set, start, end);
+
+    if (nodes_[node_index].leaf()) return;
 
     // Partition the dataset so that all LEFT examples are before all RIGHT
     // examples.

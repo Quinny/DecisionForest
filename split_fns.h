@@ -50,8 +50,8 @@ class PerceptronSplit {
   void train(const qp::rf::SampledDataSet<int, int>& data_set, std::size_t s,
              std::size_t e) {
     for (int i = 0; i < N; ++i) {
-      feature_indicies_.push_back(
-          random_range<FeatureIndex>(0, data_set.front().get().features.size()));
+      feature_indicies_.push_back(random_range<FeatureIndex>(
+          0, data_set.front().get().features.size()));
       weights_.push_back(random_real_range<double>(-1, 1));
     }
     bias_ = random_real_range<double>(-1, 1);
@@ -73,8 +73,8 @@ class PerceptronSplit {
 
   void adjust(const std::vector<int>& features, int error) {
     for (unsigned i = 0; i < weights_.size(); ++i) {
-      weights_[i] =
-          weights_[i] + (learning_rate_ * error * features[feature_indicies_[i]]);
+      weights_[i] = weights_[i] +
+                    (learning_rate_ * error * features[feature_indicies_[i]]);
     }
     bias_ = bias_ + (learning_rate_ * error);
   }
@@ -86,7 +86,7 @@ class PerceptronSplit {
     }
 
     return sum > bias_ ? qp::rf::SplitDirection::LEFT
-                           : qp::rf::SplitDirection::RIGHT;
+                       : qp::rf::SplitDirection::RIGHT;
   }
 
  private:
