@@ -81,6 +81,7 @@ SampledDataSet<Feature, Label> sample_with_replacement(
   return sample;
 }
 
+// Find the most commonly occuring label in the dataset.
 template <typename Feature, typename Label,
           typename Iter = typename SampledDataSet<Feature, Label>::iterator>
 Label mode_label(Iter start, Iter end) {
@@ -93,6 +94,17 @@ Label mode_label(Iter start, Iter end) {
   auto mode = std::max_element(histogram.begin(), histogram.end(),
                                CompareOnSecond<Label, int>());
   return mode->first;
+}
+
+template <typename Feature, typename Label,
+          typename Iter = typename SampledDataSet<Feature, Label>::iterator>
+bool single_label(Iter start, Iter end) {
+  const auto first_label = start->get().label;
+  const auto equals_first_label = [&first_label](const auto& example) {
+    return first_label == example.get().label;
+  };
+
+  return std::all_of(start, end, equals_first_label);
 }
 
 }  // namespace rf

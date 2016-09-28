@@ -24,27 +24,23 @@ class DecisionNode {
  public:
   DecisionNode(){};
 
-  bool one_label(const SampledDataSet<Feature, Label>& dataset,
-                 std::size_t start, std::size_t end) const {
-    auto first_label = dataset[start].get().label;
-    return std::all_of(dataset.begin() + start, dataset.begin() + end,
-                       [&first_label](const auto& example) {
-                         return example.get().label == first_label;
-                       });
-  }
   // Train this node to decide on the dataset rows between start and end.
   void train(const SampledDataSet<Feature, Label>& dataset, std::size_t start,
              std::size_t end) {
     prediction_ = mode_label<Feature, Label>(dataset.begin() + start,
                                              dataset.begin() + end);
-    if (one_label(dataset, start, end)) {
+
+    // If the dataset only contains one label, then there is not point in
+    // training this node.
+    if (single_label<Feature, Label>(dataset.begin() + start,
+                                     dataset.begin() + end)) {
       leaf_ = true;
       return;
     }
 
     // set_prediction(dataset, start, end);
     double min_impurity = 1000;
-    auto total_samples = static_cast<double>(dataset.size());
+    auto total_samples = static_cast<double>(end - start + 1);
 
     for (int i = 0; i < splits_to_try; ++i) {
       SplitterFn candidate_split;
