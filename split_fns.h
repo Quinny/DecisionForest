@@ -49,11 +49,10 @@ class PerceptronSplit {
  public:
   void train(const qp::rf::SampledDataSet<Feature, Label>& data_set,
              std::size_t s, std::size_t e) {
-    for (int i = 0; i < N; ++i) {
-      feature_indicies_.push_back(random_range<FeatureIndex>(
-          0, data_set.front().get().features.size()));
-      weights_.push_back(random_real_range<double>(-1, 1));
-    }
+    generate_back_n(feature_indicies_, N,
+                    std::bind(random_range<FeatureIndex>, 0,
+                              data_set.front().get().features.size()));
+    generate_back_n(weights_, N, std::bind(random_real_range<double>, -1, 1));
     bias_ = random_real_range<double>(-1, 1);
     learning_rate_ = random_real_range<double>(0, 1);
 
