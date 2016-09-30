@@ -44,7 +44,7 @@ class NDimensionalSplit {
   std::vector<int> thresholds;
 };
 
-template <typename Feature, typename Label, int N>
+template <typename Feature, typename Label, int N, int Iterations>
 class PerceptronSplit {
  public:
   void train(const qp::rf::SampledDataSet<Feature, Label>& data_set,
@@ -58,10 +58,14 @@ class PerceptronSplit {
 
     const auto should_go_left =
         mode_label<Feature, Label>(data_set.begin() + s, data_set.begin() + e);
-    for (unsigned i = s; i < e; ++i) {
-      show(data_set[i].get().features, data_set[i].get().label == should_go_left
-                                           ? qp::rf::SplitDirection::LEFT
-                                           : qp::rf::SplitDirection::RIGHT);
+
+    for (int it = 0; it < Iterations; ++it) {
+      for (unsigned i = s; i < e; ++i) {
+        show(data_set[i].get().features,
+             data_set[i].get().label == should_go_left
+                 ? qp::rf::SplitDirection::LEFT
+                 : qp::rf::SplitDirection::RIGHT);
+      }
     }
   }
 
