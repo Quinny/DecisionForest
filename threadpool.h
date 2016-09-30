@@ -14,7 +14,7 @@ class Threadpool {
   using WorkType = std::function<ReturnValue()>;
 
   // Starts a thread pool with the number of threads available on the machine.
-  Threadpool();
+  Threadpool() : Threadpool(std::thread::hardware_concurrency()) {}
 
   // Starts a thread pool with the specified number of threads.  Be careful as
   // creating too many threads will have adverse performance benefits.
@@ -38,14 +38,6 @@ class Threadpool {
   // Worker function which actually carries out the tasks.
   void worker();
 };
-
-template <typename T>
-Threadpool<T>::Threadpool() {
-  const auto threads = std::thread::hardware_concurrency();
-  for (int i = 0; i < threads; ++i) {
-    threads_.emplace_back(&Threadpool::worker, this);
-  }
-}
 
 template <typename T>
 Threadpool<T>::Threadpool(int n_threads) {

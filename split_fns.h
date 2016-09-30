@@ -10,6 +10,7 @@ namespace rf {
 
 // Splits on N features randomly.
 // TODO Template for feauture and label.
+// TODO Rethink this.  It doesn't work well with higher than 1 dimension.
 template <int N>
 class NDimensionalSplit {
  public:
@@ -44,11 +45,15 @@ class NDimensionalSplit {
   std::vector<int> thresholds;
 };
 
+// Use a single layer of perceptrons to train a split on N input features.
+// The perceptron will find the most occuring label in the sample set, and
+// attempt learn a split which segregates examples with that label.
 template <typename Feature, typename Label, int N, int Iterations>
 class PerceptronSplit {
  public:
   void train(const qp::rf::SampledDataSet<Feature, Label>& data_set,
              std::size_t s, std::size_t e) {
+    // Generate random feature indicies, weights, bias, and learning rate.
     generate_back_n(feature_indicies_, N,
                     std::bind(random_range<FeatureIndex>, 0,
                               data_set.front().get().features.size()));
@@ -56,9 +61,12 @@ class PerceptronSplit {
     bias_ = random_real_range<double>(-1, 1);
     learning_rate_ = random_real_range<double>(0, 1);
 
+    // Find the most occuring label.
     const auto should_go_left =
         mode_label<Feature, Label>(data_set.begin() + s, data_set.begin() + e);
 
+    // Show the perceptron training examples.  If the example is labeled with
+    // the mode label, then learn a left split otherwise learn a right split.
     for (int it = 0; it < Iterations; ++it) {
       for (unsigned i = s; i < e; ++i) {
         show(data_set[i].get().features,
@@ -69,12 +77,15 @@ class PerceptronSplit {
     }
   }
 
+  // Show the percentron the training example, and adjust the weights and bias
+  // according to the error.
   void show(const std::vector<Feature>& features,
             qp::rf::SplitDirection label) {
     auto output = apply(features);
     adjust(features, static_cast<int>(label) - static_cast<int>(output));
   }
 
+  // Adjust the weights and bias given a feature vector and an error.
   void adjust(const std::vector<Feature>& features, int error) {
     for (unsigned i = 0; i < weights_.size(); ++i) {
       weights_[i] = weights_[i] +
@@ -83,6 +94,8 @@ class PerceptronSplit {
     bias_ = bias_ + (learning_rate_ * error);
   }
 
+  // Feed the features into the perceptrons and determine the split direction
+  // based on if the output neuron fires.
   qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
     double sum = 0;
     for (unsigned i = 0; i < feature_indicies_.size(); ++i) {

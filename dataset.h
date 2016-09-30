@@ -19,33 +19,34 @@ struct Example {
   Label label;
 };
 
-// An example that has been sampled from a dataset.
+// An example that has been sampled from a dataset.  This allows for fast
+// copying when sampling.
 template <typename Feature, typename Label>
 using SampledExample = std::reference_wrapper<const Example<Feature, Label>>;
 
 // For readability.
 using FeatureIndex = std::size_t;
 
-// A comparator which compares the i'th feature of two sampled examples using
+// A comparator which compares the i'th feature of two training examples using
 // Cmp.
 template <typename Feature, typename Label, typename Cmp = std::less<Feature>>
 class CompareOnFeature {
  public:
-  CompareOnFeature(FeatureIndex i) : fx(i) {}
+  CompareOnFeature(FeatureIndex i) : fx_(i) {}
 
   bool operator()(const SampledExample<Feature, Label>& lhs,
                   const SampledExample<Feature, Label>& rhs) const {
-    return cmp(lhs.get().features[fx], rhs.get().features[fx]);
+    return cmp_(lhs.get().features[fx_], rhs.get().features[fx_]);
   }
 
   bool operator()(const Example<Feature, Label>& lhs,
                   const Example<Feature, Label>& rhs) const {
-    return cmp(lhs.features[fx], rhs.features[fx]);
+    return cmp_(lhs.features[fx_], rhs.features[fx_]);
   }
 
  private:
-  Cmp cmp;
-  FeatureIndex fx;
+  Cmp cmp_;
+  FeatureIndex fx_;
 };
 
 // A dataset is defined as a collection of training examples.

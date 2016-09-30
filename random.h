@@ -15,7 +15,7 @@ T random_range(const T& first, const T& last) {
   return dist(gen);
 }
 
-// TODO can i make this work without two functions?
+// Generates a random floating point in the range [first, last].
 template <typename T>
 T random_real_range(const T& first, const T& last) {
   static std::knuth_b gen(std::time(nullptr));

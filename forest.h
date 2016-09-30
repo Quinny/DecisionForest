@@ -42,6 +42,12 @@ class DecisionForest {
     }
   }
 
+  // Predict the label of a set of features.  This is done by predicting the
+  // label using each of the trees in the forest, and then taking the majority
+  // label over all trees.
+  //
+  // This could be parallelized, but running a feature vector through a tree
+  // is generally very fast and thus unnecessary.
   Label predict(const std::vector<Feature>& features) {
     std::map<Label, int> predictions;
     for (const auto& tree : trees_) {

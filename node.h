@@ -22,11 +22,13 @@ enum class SplitDirection { LEFT, RIGHT };
 template <typename Feature, typename Label, typename SplitterFn>
 class DecisionNode {
  public:
-  DecisionNode(){};
+  DecisionNode() : leaf_(false){};
 
   // Train this node to decide on the dataset rows between start and end.
   void train(const SampledDataSet<Feature, Label>& dataset, std::size_t start,
              std::size_t end) {
+    // The prediction at this node is the most occuring label in the incoming
+    // samples.
     prediction_ = mode_label<Feature, Label>(dataset.begin() + start,
                                              dataset.begin() + end);
 
@@ -75,15 +77,17 @@ class DecisionNode {
     return splitter_.apply(features);
   }
 
-  // Predict the label at this node based on probabilities.
+  // Predict the label at this node based on the mode label of the incoming
+  // samples.
   Label predict() const { return prediction_; }
 
+  // Whether or not this node is ready to predict.
   bool leaf() const { return leaf_; }
 
  private:
   Label prediction_;
   SplitterFn splitter_;
-  bool leaf_ = false;
+  bool leaf_;
 };
 
 }  // namespace rf
