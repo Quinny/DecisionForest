@@ -9,6 +9,7 @@
 #include "criterion.h"
 #include "dataset.h"
 #include "functional.h"
+#include "mahalanobis.h"
 
 namespace qp {
 namespace rf {
@@ -81,10 +82,48 @@ class DecisionNode {
   // samples.
   Label predict() const { return prediction_; }
 
+  void initialize_mahalanobis(const SampledDataSet<Feature, Label>& dataset,
+                              std::size_t start, std::size_t end) {
+    x_ = random_range<std::size_t>(0, dataset.front().get().features.size());
+    y_ = random_range<std::size_t>(0, dataset.front().get().features.size());
+
+    std::size_t distro_size = 0;
+    for (auto i = start; i != end; ++i) {
+      if (dataset[i].get().label == prediction_) {
+        ++distro_size;
+      }
+    }
+
+    cv::Mat distribution(distro_size, 2, CV_64F);
+    std::size_t c = 0;
+
+    for (auto i = start; i != end; ++i) {
+      if (dataset[i].get().label == prediction_) {
+        distribution.at<double>(c, 0) = dataset[i].get().features[x_];
+        distribution.at<double>(c, 1) = dataset[i].get().features[y_];
+        ++c;
+      }
+    }
+
+    mc_.initialize(distribution);
+  }
+
+  double mahalanobis_distance(const std::vector<Feature>& features) const {
+    cv::Mat projected(1, 2, CV_64F);
+    projected.at<double>(0, 0) = features[x_];
+    projected.at<double>(0, 1) = features[y_];
+
+    return mc_.distance(projected);
+  }
+
   // Whether or not this node is ready to predict.
   bool leaf() const { return leaf_; }
 
  private:
+  MahalanobisCalculator mc_;
+  std::size_t x_;
+  std::size_t y_;
+
   Label prediction_;
   SplitterFn splitter_;
   bool leaf_;

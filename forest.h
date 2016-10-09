@@ -27,9 +27,11 @@ class DecisionForest {
 
   // Train each tree in parallel on a bagged sample of the dataset.
   void train(const DataSet<Feature, Label>& data_set) {
+    threading::Threadpool<int> thread_pool;
+
     std::vector<std::future<int>> futures;
     for (auto& tree : trees_) {
-      futures.emplace_back(thread_pool_.add([&data_set, &tree]() {
+      futures.emplace_back(thread_pool.add([&data_set, &tree]() {
         auto sample = sample_with_replacement(data_set, data_set.size());
         tree.train(sample);
         return 1;
@@ -40,6 +42,38 @@ class DecisionForest {
     for (auto& fut : futures) {
       fut.wait();
     }
+  }
+
+  std::vector<double> transform(const std::vector<Feature>& features) const {
+    std::vector<double> transformed(trees_.size());
+    for (auto i = 0UL; i < trees_.size(); ++i) {
+      transformed[i] = trees_[i].walk(features).mahalanobis_distance(features);
+    }
+
+    return transformed;
+  }
+
+  // Same argument here for not threading.  Walking the features down the tree
+  // and transforming is a pretty quick operating and thus the speed up from
+  // threading does not compensate for the overhead.
+  DataSet<double, Label> transform(
+      const DataSet<Feature, Label>& data_set) const {
+    auto transformed =
+        empty_data_set<double, Label>(data_set.size(), trees_.size());
+
+    for (auto sample = 0ul; sample < data_set.size(); ++sample) {
+      // Carry over the same label.
+      transformed[sample].label = data_set[sample].label;
+      for (auto tree = 0ul; tree < trees_.size(); ++tree) {
+        // Provide a transformed feature for each tree.
+        const auto dist = trees_[tree]
+                              .walk(data_set[sample].features)
+                              .mahalanobis_distance(data_set[sample].features);
+
+        transformed[sample].features[tree] = dist;
+      }
+    }
+    return transformed;
   }
 
   // Predict the label of a set of features.  This is done by predicting the
@@ -61,7 +95,6 @@ class DecisionForest {
 
  private:
   std::vector<DecisionTree<Feature, Label, SpiltterFn>> trees_;
-  threading::Threadpool<int> thread_pool_;
 };
 
 }  // namespace rf

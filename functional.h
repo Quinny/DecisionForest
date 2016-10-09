@@ -5,6 +5,7 @@
 #include <functional>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace qp {
 namespace rf {
@@ -36,6 +37,16 @@ using CompareOnSecond = On<std::pair<T, U>, Cmp, Snd<T, U>>;
 template <typename Container, typename Generator>
 void generate_back_n(Container& c, std::size_t n, const Generator& g) {
   std::generate_n(std::back_inserter(c), n, g);
+}
+
+template <typename T>
+std::vector<T> project(const std::vector<T>& v,
+                       const std::vector<std::size_t>& indicies) {
+  std::vector<T> ret(indicies.size());
+  for (const auto& i : indicies) {
+    ret.push_back(v[i]);
+  }
+  return ret;
 }
 
 }  // namespace rf

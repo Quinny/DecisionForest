@@ -11,26 +11,22 @@
 namespace qp {
 namespace rf {
 
-template <typename T>
-using Matrix = std::vector<std::vector<T>>;
-
-template <typename Feature>
 class MahalanobisCalculator {
  public:
-  void initialize(const Matrix<Feature>& distribution) {
-    Matrix<double> convariance_matrix;
+  void initialize(const cv::Mat& distribution) {
+    cv::Mat convariance_matrix;
     cv::calcCovarMatrix(distribution, convariance_matrix, means_,
-                        CV_COVAR_NORMAL + CV_COVAR_ROWS);
+                        CV_COVAR_NORMAL + CV_COVAR_ROWS, CV_64F);
     cv::invert(convariance_matrix, inverse_convariance_matrix_, cv::DECOMP_SVD);
   }
 
-  double distance(const std::vector<Feature>& features) {
+  double distance(const cv::Mat& features) const {
     return cv::Mahalanobis(features, means_, inverse_convariance_matrix_);
   }
 
  private:
-  Matrix<double> inverse_convariance_matrix_;
-  std::vector<double> means_;
+  cv::Mat inverse_convariance_matrix_;
+  cv::Mat means_;
 };
 
 }  // namespace rf

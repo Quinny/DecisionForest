@@ -2,11 +2,14 @@
 #include <iostream>
 
 #include "csv.h"
+#include "deep_forest.h"
 #include "forest.h"
 #include "split_fns.h"
 
 // TODO command line arguments.
 int main() {
+  std::ios_base::sync_with_stdio(false);
+
   std::ifstream training_stream("mnist_train.csv");
   std::ifstream testing_stream("mnist_test.csv");
 
@@ -21,9 +24,17 @@ int main() {
   auto testing =
       qp::rf::read_csv_data_set<int, int>(testing_stream, 10000, 784);
 
-  qp::rf::DecisionForest<int, int, qp::rf::PerceptronSplit<int, int, 1, 1>>
-      forest(
-          /* trees=*/200, /*max_depth=*/17);
+  qp::rf::LayerConfig input{100, 5};
+  std::vector<qp::rf::LayerConfig> hidden{{100, 5}, {100, 5}};
+  qp::rf::LayerConfig output{200, 15};
+
+  qp::rf::DeepForest<int, int, qp::rf::PerceptronSplit<int, int, 1, 1>,
+                     qp::rf::PerceptronSplit<double, int, 1, 5>>
+      forest(input, hidden, output);
+
+  // qp::rf::DecisionForest<int, int, qp::rf::PerceptronSplit<int, int, 1, 1>>
+  //    forest(
+  //        /* trees=*/200, /*max_depth=*/17);
 
   std::cout << "training..." << std::endl;
   forest.train(training);

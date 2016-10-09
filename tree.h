@@ -27,8 +27,9 @@ class DecisionTree {
     return dir == SplitDirection::LEFT ? 2 * i + 1 : 2 * i + 2;
   }
 
-  // Predict the label for a set of features.
-  Label predict(const std::vector<Feature>& features) const {
+  // Walks the tree based on the feature vector and returns the leaf node.
+  const DecisionNode<Feature, Label, SplitterFn>& walk(
+      const std::vector<Feature>& features) const {
     std::size_t node_index = 0;
 
     // Start at the root node and walk down the tree until we reach a leaf.
@@ -36,7 +37,12 @@ class DecisionTree {
       node_index =
           walk_to(nodes_[node_index].split_direction(features), node_index);
     }
-    return nodes_[node_index].predict();
+    return nodes_[node_index];
+  }
+
+  // Predict the label for a set of features.
+  Label predict(const std::vector<Feature>& features) const {
+    return walk(features).predict();
   }
 
   // Train the tree on the given dataset.
@@ -57,7 +63,10 @@ class DecisionTree {
     // Train the current node.
     nodes_[node_index].train(data_set, start, end);
 
-    if (nodes_[node_index].leaf()) return;
+    if (is_leaf(node_index)) {
+      nodes_[node_index].initialize_mahalanobis(data_set, start, end);
+      return;
+    }
 
     // Partition the dataset so that all LEFT examples are before all RIGHT
     // examples.
@@ -81,6 +90,8 @@ class DecisionTree {
  private:
   std::vector<DecisionNode<Feature, Label, SplitterFn>> nodes_;
 };
-}
-}
+
+}  // namespace rf
+}  // namespace qp
+
 #endif /* TREE_H */
