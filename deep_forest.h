@@ -3,6 +3,7 @@
 
 #include "dataset.h"
 #include "forest.h"
+#include "logging.h"
 
 namespace qp {
 namespace rf {
@@ -46,16 +47,17 @@ class DeepForest {
 
   // Train the deep forest on the given dataset.
   void train(const DataSet<Feature, Label>& data_set) {
-    std::cout << "input" << std::endl;
+    LOG << "training input layer" << std::endl;
+    // std::cout << "input" << std::endl;
     input_layer_.train(data_set);
     auto transformed = input_layer_.transform(data_set);
     for (auto& layer : hidden_layers_) {
-      std::cout << "hidden" << std::endl;
+      LOG << "training hidden layer" << std::endl;
       layer.train(transformed);
       transformed = layer.transform(transformed);
     }
 
-    std::cout << "output" << std::endl;
+    LOG << "training output layer" << std::endl;
     output_layer_.train(transformed);
   }
 

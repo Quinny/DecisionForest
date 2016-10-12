@@ -4,6 +4,7 @@
 #include "csv.h"
 #include "deep_forest.h"
 #include "forest.h"
+#include "logging.h"
 #include "split_fns.h"
 
 // TODO command line arguments.
@@ -18,7 +19,7 @@ int main() {
     return 1;
   }
 
-  std::cout << "reading data..." << std::endl;
+  qp::LOG << "reading data..." << std::endl;
   auto training =
       qp::rf::read_csv_data_set<int, int>(training_stream, 50000, 784);
   auto testing =
@@ -36,10 +37,10 @@ int main() {
   //    forest(
   //        /* trees=*/200, /*max_depth=*/17);
 
-  std::cout << "training..." << std::endl;
+  qp::LOG << "training..." << std::endl;
   forest.train(training);
 
-  std::cout << "predicting..." << std::endl;
+  qp::LOG << "predicting..." << std::endl;
   int correctly_classified = 0;
   for (unsigned i = 0; i < testing.size(); ++i) {
     if (forest.predict(testing[i].features) == testing[i].label) {
