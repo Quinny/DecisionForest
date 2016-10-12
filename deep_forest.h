@@ -40,8 +40,7 @@ class DeepForest {
       : input_layer_(input_layer_config.trees, input_layer_config.depth),
         output_layer_(output_layer_config.trees, output_layer_config.depth) {
     for (const auto& config : hidden_layer_configs) {
-      hidden_layers_.emplace_back(
-          new DecisionForest<double, Label, Hack>(config.trees, config.depth));
+      hidden_layers_.emplace_back(config.trees, config.depth);
     }
   }
 
@@ -52,8 +51,8 @@ class DeepForest {
     auto transformed = input_layer_.transform(data_set);
     for (auto& layer : hidden_layers_) {
       std::cout << "hidden" << std::endl;
-      layer->train(transformed);
-      transformed = layer->transform(transformed);
+      layer.train(transformed);
+      transformed = layer.transform(transformed);
     }
 
     std::cout << "output" << std::endl;
@@ -63,17 +62,14 @@ class DeepForest {
   Label predict(const std::vector<Feature>& features) {
     auto transformed = input_layer_.transform(features);
     for (const auto& layer : hidden_layers_) {
-      transformed = layer->transform(transformed);
+      transformed = layer.transform(transformed);
     }
     return output_layer_.predict(transformed);
   }
 
  private:
-  // TODO is there a way around this?  Compiler errors about stuff
-  // not being moveable.
-  using forest_ptr = std::unique_ptr<DecisionForest<double, Label, Hack>>;
   DecisionForest<Feature, Label, SplitterFn> input_layer_;
-  std::vector<forest_ptr> hidden_layers_;
+  std::vector<DecisionForest<double, Label, Hack>> hidden_layers_;
   DecisionForest<double, Label, Hack> output_layer_;
 };
 
