@@ -44,6 +44,9 @@ class DecisionForest {
     }
   }
 
+  // Transform the vector of features by computing the mahalanobis distance
+  // to the leaf node in each tree which would classify the data.
+  // The resulting vector will be 1 x |trees|
   std::vector<double> transform(const std::vector<Feature>& features) const {
     std::vector<double> transformed(trees_.size());
     for (auto i = 0UL; i < trees_.size(); ++i) {
@@ -53,9 +56,7 @@ class DecisionForest {
     return transformed;
   }
 
-  // Same argument here for not threading.  Walking the features down the tree
-  // and transforming is a pretty quick operating and thus the speed up from
-  // threading does not compensate for the overhead.
+  // Transform an entire dataset of features.
   DataSet<double, Label> transform(
       const DataSet<Feature, Label>& data_set) const {
     auto transformed =
@@ -83,7 +84,7 @@ class DecisionForest {
   // This could be parallelized, but running a feature vector through a tree
   // is generally very fast and thus unnecessary.
   Label predict(const std::vector<Feature>& features) {
-    std::map<Label, int> predictions;
+    std::unordered_map<Label, int> predictions;
     for (const auto& tree : trees_) {
       ++predictions[tree.predict(features)];
     }

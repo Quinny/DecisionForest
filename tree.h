@@ -63,6 +63,8 @@ class DecisionTree {
     // Train the current node.
     nodes_[node_index].train(data_set, start, end);
 
+    // The the node is a leaf then initialize the mahalanobis distance
+    // calculator for feature transformation.
     if (is_leaf(node_index)) {
       nodes_[node_index].initialize_mahalanobis(data_set, start, end);
       return;

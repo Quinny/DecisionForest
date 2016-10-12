@@ -48,7 +48,6 @@ class DeepForest {
   // Train the deep forest on the given dataset.
   void train(const DataSet<Feature, Label>& data_set) {
     LOG << "training input layer" << std::endl;
-    // std::cout << "input" << std::endl;
     input_layer_.train(data_set);
     auto transformed = input_layer_.transform(data_set);
     for (auto& layer : hidden_layers_) {

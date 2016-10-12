@@ -41,7 +41,7 @@ class DecisionNode {
       return;
     }
 
-    double min_impurity = 1000;
+    double min_impurity = std::numeric_limits<double>::max();
     auto total_samples = static_cast<double>(end - start + 1);
 
     // Try different split functions and choose the one which results in the
@@ -82,6 +82,9 @@ class DecisionNode {
   // samples.
   Label predict() const { return prediction_; }
 
+  // Initialize the mahalanobis distance calculator.  Picks two random features
+  // and then calcuates the distribution of those features for the dominant
+  // label at this node.
   void initialize_mahalanobis(const SampledDataSet<Feature, Label>& dataset,
                               std::size_t start, std::size_t end) {
     x_ = random_range<std::size_t>(0, dataset.front().get().features.size());
