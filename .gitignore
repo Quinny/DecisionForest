@@ -2,3 +2,4 @@
 *.out.dSYM/
 .gdb*
 *.csv
+*.o
