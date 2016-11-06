@@ -82,6 +82,17 @@ SampledDataSet<Feature, Label> sample_with_replacement(
   return sample;
 }
 
+// For testing only.
+template <typename Feature, typename Label>
+SampledDataSet<Feature, Label> sample_exactly(
+    const DataSet<Feature, Label>& dataset) {
+  SampledDataSet<Feature, Label> sample;
+  for (const auto& example : dataset) {
+    sample.push_back(example);
+  }
+  return sample;
+}
+
 // Find the most commonly occuring label in the dataset.
 template <typename Feature, typename Label,
           typename Iter = typename SampledDataSet<Feature, Label>::iterator>

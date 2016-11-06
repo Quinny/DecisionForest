@@ -1,7 +1,7 @@
 import fnmatch
 import os
 
-COMPILE_FMT = "g++ {0} gtest/gmock-gtest-all.o gtest/gtest_main.o -I../"
+COMPILE_FMT = "g++ {0} gtest/gmock-gtest-all.o gtest/gtest_main.o -I../ -lopencv_core"
 
 def all_test_files():
     return filter(lambda f: fnmatch.fnmatch(f, "*_test.cpp"), os.listdir("."))

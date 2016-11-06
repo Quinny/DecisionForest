@@ -6,7 +6,7 @@
 namespace qp {
 namespace rf {
 
-// Given a histrogram of label occurances, compute the gini impurity of the
+// Given a histogram of label occurances, compute the gini impurity of the
 // distribution.  A return value of 0 means the distribution is totally pure
 // (a single label), and a return value of 1 means the distribution is impure
 // (all labels have an even number of occurances).

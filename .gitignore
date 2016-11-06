@@ -3,3 +3,4 @@
 .gdb*
 *.csv
 *.o
+.ycm_*
