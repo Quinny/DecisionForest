@@ -81,6 +81,8 @@ class ModeVsAllPerceptronSplit {
                                : qp::rf::SplitDirection::RIGHT;
   }
 
+  const std::vector<FeatureIndex>& get_features() const { return projection_; }
+
  private:
   SingleLayerPerceptron<Feature, Label, StepActivation> layer_;
   mutable std::vector<FeatureIndex> projection_;

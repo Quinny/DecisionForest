@@ -27,6 +27,16 @@ using Matrix = std::vector<std::vector<T>>;
 template <typename Feature, typename Label, typename ActivationFn>
 class SingleLayerPerceptron {
  public:
+  // For testing only.
+  SingleLayerPerceptron(const Matrix<double>& weights,
+                        const std::vector<double>& biases, double learning_rate)
+      : weights_(weights),
+        biases_(biases),
+        n_inputs_(weights.front().size()),
+        n_outputs_(biases.size()),
+        learning_rate_(learning_rate) {}
+
+  // Initialize the layer with random weights and biases in [-1, 1].
   SingleLayerPerceptron(std::size_t n_inputs, std::size_t n_outputs,
                         double learning_rate)
       : n_inputs_(n_inputs),
@@ -48,7 +58,7 @@ class SingleLayerPerceptron {
     for (auto i = 0ul; i < n_outputs_; ++i) {
       output[i] =
           activate_(std::inner_product(weights_[i].begin(), weights_[i].end(),
-                                       features.begin(), -1 * biases_[i]));
+                                       features.begin(), biases_[i]));
     }
     return output;
   }
