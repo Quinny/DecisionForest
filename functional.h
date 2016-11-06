@@ -42,7 +42,7 @@ void generate_back_n(Container& c, std::size_t n, const Generator& g) {
 template <typename T>
 std::vector<T> project(const std::vector<T>& v,
                        const std::vector<std::size_t>& indicies) {
-  std::vector<T> ret(indicies.size());
+  std::vector<T> ret;
   for (const auto& i : indicies) {
     ret.push_back(v[i]);
   }

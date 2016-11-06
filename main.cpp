@@ -25,17 +25,17 @@ int main() {
   auto testing =
       qp::rf::read_csv_data_set<int, int>(testing_stream, 10000, 784);
 
-  qp::rf::LayerConfig input{100, 5};
-  std::vector<qp::rf::LayerConfig> hidden{{100, 5}, {100, 5}};
-  qp::rf::LayerConfig output{200, 15};
+  qp::rf::LayerConfig input{10, 10};
+  std::vector<qp::rf::LayerConfig> hidden{};  // no hidden for now
+  qp::rf::LayerConfig output{10, 15};
 
   qp::rf::DeepForest<int, int, qp::rf::PerceptronSplit<int, int, 1, 1>,
-                     qp::rf::PerceptronSplit<double, int, 1, 5>>
+                     qp::rf::PerceptronSplit<double, int, 1, 1>>
       forest(input, hidden, output);
 
   // qp::rf::DecisionForest<int, int, qp::rf::PerceptronSplit<int, int, 1, 1>>
   //    forest(
-  //        /* trees=*/200, /*max_depth=*/17);
+  //        /* trees=*/10, /*max_depth=*/10);
 
   qp::LOG << "training..." << std::endl;
   forest.train(training);

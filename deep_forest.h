@@ -53,6 +53,7 @@ class DeepForest {
     for (auto& layer : hidden_layers_) {
       LOG << "training hidden layer" << std::endl;
       layer.train(transformed);
+      LOG << "transforming data set" << std::endl;
       transformed = layer.transform(transformed);
     }
 

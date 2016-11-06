@@ -4,6 +4,7 @@
 #include "dataset.h"
 #include "node.h"
 #include "random.h"
+#include "single_layer_perceptron.h"
 
 namespace qp {
 namespace rf {
@@ -45,6 +46,51 @@ class NDimensionalSplit {
   std::vector<int> thresholds;
 };
 
+template <typename Feature, typename Label, int N>
+class ModeVsAllPerceptronSplit {
+ public:
+  ModeVsAllPerceptronSplit() : layer_(N, 1, random_real_range<double>(0, 1)) {}
+
+  void train(const qp::rf::SampledDataSet<Feature, Label>& data_set,
+             std::size_t s, std::size_t e) {
+    const auto total_features = data_set.front().get().features.size();
+    generate_back_n(projection_, N, std::bind(random_range<FeatureIndex>, 0,
+                                              total_features - 1));
+
+    const auto should_fire =
+        mode_label<Feature, Label>(data_set.begin() + s, data_set.begin() + e);
+    const std::vector<double> fire = {1};
+    const std::vector<double> not_fire = {-1};
+
+    for (unsigned i = s; i < e; ++i) {
+      const auto projected = project(data_set[i].get().features, projection_);
+      layer_.learn(projected,
+                   data_set[i].get().label == should_fire ? fire : not_fire);
+    }
+  }
+
+  qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
+    // This node was not reached during training.
+    if (projection_.empty()) {
+      generate_back_n(projection_, N, std::bind(random_range<FeatureIndex>, 0,
+                                                features.size() - 1));
+    }
+    const auto projected = project(features, projection_);
+    const auto output = layer_.predict(projected);
+    return output.front() == 1 ? qp::rf::SplitDirection::LEFT
+                               : qp::rf::SplitDirection::RIGHT;
+  }
+
+ private:
+  SingleLayerPerceptron<Feature, Label, StepActivation> layer_;
+  mutable std::vector<FeatureIndex> projection_;
+};
+
+double weight_update(const int& feature, const double error,
+                     const double learning_rate, const double current_weight) {
+  return current_weight + (learning_rate * error * feature);
+}
+
 // Use a single layer of perceptrons to train a split on N input features.
 // The perceptron will find the most occuring label in the sample set, and
 // attempt learn a split which segregates examples with that label.
@@ -56,7 +102,7 @@ class PerceptronSplit {
     // Generate random feature indicies, weights, bias, and learning rate.
     generate_back_n(feature_indicies_, N,
                     std::bind(random_range<FeatureIndex>, 0,
-                              data_set.front().get().features.size()));
+                              data_set.front().get().features.size() - 1));
     generate_back_n(weights_, N, std::bind(random_real_range<double>, -1, 1));
     bias_ = random_real_range<double>(-1, 1);
     learning_rate_ = random_real_range<double>(0, 1);
@@ -88,22 +134,25 @@ class PerceptronSplit {
   // Adjust the weights and bias given a feature vector and an error.
   void adjust(const std::vector<Feature>& features, int error) {
     for (unsigned i = 0; i < weights_.size(); ++i) {
-      weights_[i] = weights_[i] +
-                    (learning_rate_ * error * features[feature_indicies_[i]]);
+      weights_[i] = weight_update(features[feature_indicies_[i]], (double)error,
+                                  learning_rate_, weights_[i]);
     }
-    bias_ = bias_ + (learning_rate_ * error);
+    bias_ = weight_update(1.0, error, learning_rate_, bias_);
   }
 
   // Feed the features into the perceptrons and determine the split direction
   // based on if the output neuron fires.
   qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
-    double sum = 0;
-    for (unsigned i = 0; i < feature_indicies_.size(); ++i) {
-      sum += features[feature_indicies_[i]] * weights_[i];
-    }
+    const auto projected = project(features, feature_indicies_);
+    double sum = std::inner_product(weights_.begin(), weights_.end(),
+                                    projected.begin(), -1 * bias_);
+    return sum > 0 ? qp::rf::SplitDirection::LEFT
+                   : qp::rf::SplitDirection::RIGHT;
+  }
 
-    return sum > bias_ ? qp::rf::SplitDirection::LEFT
-                       : qp::rf::SplitDirection::RIGHT;
+  const std::vector<FeatureIndex>& get_features() const {
+    assert(!feature_indicies_.empty());
+    return feature_indicies_;
   }
 
  private:
