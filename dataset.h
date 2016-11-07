@@ -132,6 +132,12 @@ void zero_center_mean(DataSet<Feature, Label>& dataset) {
       means[feature] += example.features[feature] / n_samples_real;
     }
   }
+
+  for (auto& example : dataset) {
+    for (auto feature = 0ul; feature < n_features; ++feature) {
+      example.features[feature] -= means[feature];
+    }
+  }
 }
 
 }  // namespace rf

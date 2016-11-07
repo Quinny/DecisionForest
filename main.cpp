@@ -25,6 +25,9 @@ int main() {
   auto testing =
       qp::rf::read_csv_data_set<int, int>(testing_stream, 10000, 784);
 
+  qp::rf::zero_center_mean(training);
+  qp::rf::zero_center_mean(testing);
+
   qp::rf::LayerConfig input{200, 5};
   std::vector<qp::rf::LayerConfig> hidden{};
   qp::rf::LayerConfig output{200, 15};

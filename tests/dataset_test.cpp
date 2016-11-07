@@ -57,3 +57,21 @@ TEST_F(DataSetTest, SingleLabel) {
       qp::rf::single_label<int, int>(sampled.begin(), sampled.end());
   EXPECT_TRUE(t2);
 }
+
+TEST_F(DataSetTest, ZeroCenter) {
+  std::string csv_dataset =
+      "1, 2, 3\n"
+      "2, 7, 9\n"
+      "1, 8, 7\n";
+
+  std::stringstream stream(csv_dataset);
+  auto dataset = qp::rf::read_csv_data_set<int, int>(stream, 3, 2);
+
+  // Mean for f1 = 5.666666
+  // Mean for f2 = 6.333333
+  qp::rf::zero_center_mean(dataset);
+
+  EXPECT_THAT(dataset[0].features, ElementsAre(-3, -3));
+  EXPECT_THAT(dataset[1].features, ElementsAre(1, 2));
+  EXPECT_THAT(dataset[2].features, ElementsAre(2, 0));
+}

@@ -14,7 +14,7 @@
 namespace qp {
 namespace rf {
 
-const int splits_to_try = 400;
+const int splits_to_try = 20;
 
 enum class SplitDirection { LEFT, RIGHT };
 
