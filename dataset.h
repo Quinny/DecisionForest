@@ -120,6 +120,20 @@ bool single_label(Iter start, Iter end) {
   return std::all_of(start, end, equals_first_label);
 }
 
+// TODO test this
+template <typename Feature, typename Label>
+void zero_center_mean(DataSet<Feature, Label>& dataset) {
+  const auto n_features = dataset.front().features.size();
+  const auto n_samples_real = static_cast<double>(dataset.size());
+  std::vector<double> means(n_features, 0);
+
+  for (const auto& example : dataset) {
+    for (auto feature = 0ul; feature < n_features; ++feature) {
+      means[feature] += example.features[feature] / n_samples_real;
+    }
+  }
+}
+
 }  // namespace rf
 }  // namespace qp
 #endif /* DATASET_H */

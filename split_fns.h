@@ -9,6 +9,38 @@
 namespace qp {
 namespace rf {
 
+template <typename Feature, typename Label>
+class RandomUnivariateSplit {
+ public:
+  void train(const qp::rf::SampledDataSet<Feature, Label>& set, std::size_t s,
+             std::size_t e) {
+    const auto total_features = set.front().get().features.size();
+    feature_index_ = random_range<FeatureIndex>(0, total_features - 1);
+
+    const auto feature_range = std::minmax_element(
+        set.begin() + s, set.begin() + e,
+        qp::rf::CompareOnFeature<Feature, Label>(feature_index_));
+
+    const auto low = feature_range.first->get().features[feature_index_];
+    const auto high = feature_range.second->get().features[feature_index_];
+    const auto threshold = qp::rf::random_range<Feature>(low, high);
+  }
+
+  qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
+    return features[feature_index_] < threshold_
+               ? qp::rf::SplitDirection::LEFT
+               : qp::rf::SplitDirection::RIGHT;
+  }
+
+  const std::vector<FeatureIndex>& get_features() const {
+    return {feature_index_};
+  }
+
+ private:
+  FeatureIndex feature_index_;
+  Feature threshold_;
+};
+
 // Splits on N features randomly.
 // TODO Template for feauture and label.
 // TODO Rethink this.  It doesn't work well with higher than 1 dimension.
@@ -18,8 +50,8 @@ class NDimensionalSplit {
   void train(const qp::rf::SampledDataSet<int, int>& set, std::size_t s,
              std::size_t e) {
     for (int i = 0; i < N; ++i) {
-      auto feature_index =
-          qp::rf::random_range<int>(0ul, set.front().get().features.size());
+      auto feature_index = qp::rf::random_range<FeatureIndex>(
+          0ul, set.front().get().features.size());
       auto feature_range = std::minmax_element(
           set.begin() + s, set.begin() + e,
           qp::rf::CompareOnFeature<int, int>(feature_index));
@@ -41,8 +73,12 @@ class NDimensionalSplit {
     return qp::rf::SplitDirection::RIGHT;
   }
 
+  const std::vector<FeatureIndex>& get_features() const {
+    return feature_indexes;
+  }
+
  private:
-  std::vector<int> feature_indexes;
+  std::vector<FeatureIndex> feature_indexes;
   std::vector<int> thresholds;
 };
 
@@ -97,7 +133,7 @@ double weight_update(const int& feature, const double error,
 // The perceptron will find the most occuring label in the sample set, and
 // attempt learn a split which segregates examples with that label.
 template <typename Feature, typename Label, int N, int Iterations>
-class PerceptronSplit {
+class WeirdPerceptronSplit {
  public:
   void train(const qp::rf::SampledDataSet<Feature, Label>& data_set,
              std::size_t s, std::size_t e) {
@@ -139,6 +175,8 @@ class PerceptronSplit {
       weights_[i] = weight_update(features[feature_indicies_[i]], (double)error,
                                   learning_rate_, weights_[i]);
     }
+
+    // THIS IS WRONG
     bias_ = weight_update(1.0, error, learning_rate_, bias_);
   }
 
@@ -146,6 +184,8 @@ class PerceptronSplit {
   // based on if the output neuron fires.
   qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
     const auto projected = project(features, feature_indicies_);
+
+    // THIS IS WRONG.
     double sum = std::inner_product(weights_.begin(), weights_.end(),
                                     projected.begin(), -1 * bias_);
     return sum > 0 ? qp::rf::SplitDirection::LEFT

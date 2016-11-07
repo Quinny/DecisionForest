@@ -35,7 +35,7 @@ int main() {
   */
   qp::rf::DecisionForest<int, int,
                          qp::rf::ModeVsAllPerceptronSplit<int, int, 2>>
-      forest(200, 15);
+      forest(10, 10);
 
   qp::LOG << "training..." << std::endl;
   forest.train(training);
