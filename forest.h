@@ -27,7 +27,7 @@ class DecisionForest {
 
   // Train each tree in parallel on a bagged sample of the dataset.
   void train(const DataSet<Feature, Label>& data_set) {
-    threading::Threadpool<int> thread_pool;
+    threading::Threadpool thread_pool;
 
     std::vector<std::future<int>> futures;
     for (auto& tree : trees_) {
