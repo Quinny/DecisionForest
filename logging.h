@@ -3,6 +3,7 @@
 
 #include <ctime>
 #include <iostream>
+#include <cstring>
 
 namespace qp {
 namespace logging {
@@ -15,7 +16,7 @@ struct LogStream {
     const auto tm = std::time(nullptr);
     const auto* curtime = localtime(&tm);
     auto* time_str = asctime(curtime);
-    time_str[strlen(time_str) - 1] = 0;  // stupid new line.
+    time_str[std::strlen(time_str) - 1] = 0;  // stupid new line.
     std::cout << time_str << " -- " << x;
     return std::cout;
   }
