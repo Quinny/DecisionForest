@@ -89,12 +89,6 @@ class DecisionNode {
                               std::size_t start, std::size_t end) {
     distro_project_ = splitter_.get_features();
 
-    /*
-    const auto total_features = dataset.front().get().features.size() - 1;
-    x_ = random_range<std::size_t>(0, total_features - 1);
-    y_ = random_range<std::size_t>(0, total_features - 1);
-    */
-
     std::size_t distro_size = 0;
     for (auto i = start; i != end; ++i) {
       if (dataset[i].get().label == prediction_) {
@@ -110,8 +104,6 @@ class DecisionNode {
         for (int j = 0; j < distro_project_.size(); ++j) {
           distribution.at<double>(c, j) =
               dataset[i].get().features[distro_project_[j]];
-          // distribution.at<double>(c, 0) = dataset[i].get().features[x_];
-          // distribution.at<double>(c, 1) = dataset[i].get().features[y_];
         }
         ++c;
       }
@@ -125,8 +117,6 @@ class DecisionNode {
     for (int i = 0; i < distro_project_.size(); ++i) {
       projected.at<double>(0, i) = features[distro_project_[i]];
     }
-    // projected.at<double>(0, 0) = features[x_];
-    // projected.at<double>(0, 1) = features[y_];
 
     return mc_.distance(projected);
   }
@@ -137,8 +127,6 @@ class DecisionNode {
  private:
   MahalanobisCalculator mc_;
   std::vector<FeatureIndex> distro_project_;
-  // std::size_t x_;
-  // std::size_t y_;
 
   Label prediction_;
   SplitterFn splitter_;
