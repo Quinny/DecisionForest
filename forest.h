@@ -19,7 +19,12 @@ namespace rf {
 template <typename Feature, typename Label, typename SpiltterFn>
 class DecisionForest {
  public:
-  DecisionForest(std::size_t n_trees, std::size_t max_depth) {
+  // Grow a forest of size |n_trees|, each of depth |max_depth|.  Each tree
+  // will be trained a bagged subset of the data of size
+  // |training data| * bag_percentage.
+  DecisionForest(std::size_t n_trees, std::size_t max_depth,
+                 double bag_percentage)
+      : bag_percentage_(bag_percentage) {
     for (unsigned i = 0; i < n_trees; ++i) {
       trees_.emplace_back(max_depth);
     }
@@ -31,8 +36,9 @@ class DecisionForest {
 
     std::vector<std::future<int>> futures;
     for (auto& tree : trees_) {
-      futures.emplace_back(thread_pool.add([&data_set, &tree]() {
-        auto sample = sample_with_replacement(data_set, data_set.size());
+      futures.emplace_back(thread_pool.add([&data_set, &tree, this]() {
+        auto sample = sample_with_replacement(
+            data_set, data_set.size() * bag_percentage_);
         tree.train(sample);
         return 1;
       }));
@@ -96,6 +102,7 @@ class DecisionForest {
 
  private:
   std::vector<DecisionTree<Feature, Label, SpiltterFn>> trees_;
+  double bag_percentage_;
 };
 
 }  // namespace rf
