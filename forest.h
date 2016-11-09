@@ -25,6 +25,7 @@ class DecisionForest {
   DecisionForest(std::size_t n_trees, std::size_t max_depth,
                  double bag_percentage)
       : bag_percentage_(bag_percentage) {
+    trees_.reserve(n_trees);
     for (unsigned i = 0; i < n_trees; ++i) {
       trees_.emplace_back(max_depth);
     }
@@ -34,13 +35,13 @@ class DecisionForest {
   void train(const DataSet<Feature, Label>& data_set) {
     threading::Threadpool thread_pool;
 
-    std::vector<std::future<int>> futures;
+    std::vector<std::future<void>> futures;
+    futures.reserve(trees_.size());
     for (auto& tree : trees_) {
       futures.emplace_back(thread_pool.add([&data_set, &tree, this]() {
         auto sample = sample_with_replacement(
             data_set, data_set.size() * bag_percentage_);
         tree.train(sample);
-        return 1;
       }));
     }
 

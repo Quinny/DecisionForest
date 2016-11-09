@@ -43,6 +43,7 @@ template <typename T>
 std::vector<T> project(const std::vector<T>& v,
                        const std::vector<std::size_t>& indicies) {
   std::vector<T> ret;
+  ret.reserve(indicies.size());
   for (const auto& i : indicies) {
     ret.push_back(v[i]);
   }

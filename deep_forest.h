@@ -40,6 +40,7 @@ class DeepForest {
              LayerConfig output_layer_config)
       : input_layer_(input_layer_config.trees, input_layer_config.depth),
         output_layer_(output_layer_config.trees, output_layer_config.depth) {
+    hidden_layers_.reserve(hidden_layer_configs.size());
     for (const auto& config : hidden_layer_configs) {
       hidden_layers_.emplace_back(config.trees, config.depth);
     }
