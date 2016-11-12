@@ -36,7 +36,7 @@ class DecisionForest {
 #ifndef N_WORKERS
     threading::Threadpool thread_pool;
 #else
-    thread::Threadpool thread_pool(N_WORKERS);
+    threading::Threadpool thread_pool(N_WORKERS);
 #endif
 
     std::vector<std::future<void>> futures;
