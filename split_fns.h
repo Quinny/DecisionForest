@@ -142,9 +142,16 @@ class HighestAverageSigmoidActivation {
 
   void train(const qp::rf::SampledDataSet<Feature, Label>& data_set,
              std::size_t s, std::size_t e) {
+    /*
     const auto total_features = data_set.front().get().features.size();
     generate_back_n(projection_, N, std::bind(random_range<FeatureIndex>, 0,
                                               total_features - 1));
+    */
+
+    generate_back_n(projection_, N, [&]() {
+      return random_non_const_feature<Feature, Label>(data_set.begin() + s,
+                                                      data_set.begin() + e);
+    });
 
     auto label_ids = label_identifiers(data_set, s, e);
     layer_.reset(new SingleLayerPerceptron<Feature, Label, SigmoidActivation>(
