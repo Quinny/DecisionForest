@@ -121,36 +121,10 @@ bool single_label(Iter start, Iter end) {
   return std::all_of(start, end, equals_first_label);
 }
 
-// Determines if a given feature is constant within a given range.  These
-// features will not be informational.
-template <typename Feature, typename Label,
-          typename Iter = typename SampledDataSet<Feature, Label>::iterator>
-bool is_const_feature(Iter start, Iter end, Feature fx) {
-  const auto first_value = start->get().features[fx];
-  const auto equals_first_value = [&first_value, &fx](const auto& example) {
-    return first_value == example.get().features[fx];
-  };
-
-  return std::all_of(start, end, equals_first_value);
-}
-
-// Samples a random non-const feature in the given range.
-template <typename Feature, typename Label,
-          typename Iter = typename SampledDataSet<Feature, Label>::iterator>
-FeatureIndex random_non_const_feature(Iter start, Iter end) {
-  const auto total_features = start->get().features.size();
-  auto fx = random_range<FeatureIndex>(0, total_features - 1);
-
-  while (is_const_feature<Feature, Label>(start, end, fx)) {
-    fx = random_range<FeatureIndex>(0, total_features - 1);
-  }
-  return fx;
-}
-
 // Centers the mean of the given dataset on 0.  Helps improve performance of
 // perceptron splitters.
 template <typename Feature, typename Label>
-void zero_center_mean(DataSet<Feature, Label>& dataset) {
+std::vector<double> zero_center_mean(DataSet<Feature, Label>& dataset) {
   const auto n_features = dataset.front().features.size();
   const auto n_samples_real = static_cast<double>(dataset.size());
   std::vector<double> means(n_features, 0);
@@ -161,6 +135,21 @@ void zero_center_mean(DataSet<Feature, Label>& dataset) {
     }
   }
 
+  for (auto& example : dataset) {
+    for (auto feature = 0ul; feature < n_features; ++feature) {
+      example.features[feature] -= means[feature];
+    }
+  }
+
+  return means;
+}
+
+// Centers the mean of the given dataset on 0.  Helps improve performance of
+// perceptron splitters.
+template <typename Feature, typename Label>
+void zero_center_mean(DataSet<Feature, Label>& dataset,
+                      const std::vector<double>& means) {
+  const auto n_features = dataset.front().features.size();
   for (auto& example : dataset) {
     for (auto feature = 0ul; feature < n_features; ++feature) {
       example.features[feature] -= means[feature];

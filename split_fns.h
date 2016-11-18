@@ -23,7 +23,7 @@ class RandomUnivariateSplit {
 
     const auto low = feature_range.first->get().features[feature_index_];
     const auto high = feature_range.second->get().features[feature_index_];
-    const auto threshold = qp::rf::random_range<Feature>(low, high);
+    const auto threshold = qp::rf::random_real_range<Feature>(low, high);
   }
 
   qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
@@ -32,7 +32,7 @@ class RandomUnivariateSplit {
                : qp::rf::SplitDirection::RIGHT;
   }
 
-  const std::vector<FeatureIndex>& get_features() const {
+  const std::vector<FeatureIndex> get_features() const {
     return {feature_index_};
   }
 
@@ -106,11 +106,6 @@ class ModeVsAllPerceptronSplit {
   }
 
   qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
-    // This node was not reached during training.
-    if (projection_.empty()) {
-      generate_back_n(projection_, N, std::bind(random_range<FeatureIndex>, 0,
-                                                features.size() - 1));
-    }
     const auto projected = project(features, projection_);
     const auto output = layer_.predict(projected);
     return output.front() == 1 ? qp::rf::SplitDirection::LEFT
@@ -121,7 +116,7 @@ class ModeVsAllPerceptronSplit {
 
  private:
   SingleLayerPerceptron<Feature, Label, StepActivation> layer_;
-  mutable std::vector<FeatureIndex> projection_;
+  std::vector<FeatureIndex> projection_;
 };
 
 template <typename Feature, typename Label, int N>
@@ -142,15 +137,9 @@ class HighestAverageSigmoidActivation {
 
   void train(const qp::rf::SampledDataSet<Feature, Label>& data_set,
              std::size_t s, std::size_t e) {
-    /*
     const auto total_features = data_set.front().get().features.size();
-    generate_back_n(projection_, N, std::bind(random_range<FeatureIndex>, 0,
-                                              total_features - 1));
-    */
-
-    generate_back_n(projection_, N, [&]() {
-      return random_non_const_feature<Feature, Label>(data_set.begin() + s,
-                                                      data_set.begin() + e);
+    generate_back_n(projection_, N, [total_features]() {
+      return random_range<FeatureIndex>(0, total_features - 1);
     });
 
     auto label_ids = label_identifiers(data_set, s, e);
