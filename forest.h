@@ -61,7 +61,7 @@ class DecisionForest {
   std::vector<double> transform(const std::vector<Feature>& features) const {
     std::vector<double> transformed(trees_.size());
     for (auto i = 0UL; i < trees_.size(); ++i) {
-      transformed[i] = trees_[i].walk(features).mahalanobis_distance(features);
+      transformed[i] = trees_[i]->walk(features).mahalanobis_distance(features);
     }
 
     return transformed;
@@ -80,7 +80,7 @@ class DecisionForest {
         // Provide a transformed feature for each tree.
         const auto dist = trees_[tree]
                               .walk(data_set[sample].features)
-                              .mahalanobis_distance(data_set[sample].features);
+                              ->mahalanobis_distance(data_set[sample].features);
 
         transformed[sample].features[tree] = dist;
       }
