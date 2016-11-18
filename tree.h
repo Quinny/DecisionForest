@@ -14,59 +14,48 @@ template <typename Feature, typename Label, typename SplitterFn>
 class DecisionTree {
  public:
   // Create a DecisionTree with a given depth.
-  DecisionTree(std::size_t depth) : nodes_(std::pow(2, depth + 1) - 1) {}
-
-  // Checks if a given node index is a leaf.
-  bool is_leaf(std::size_t i) const {
-    return nodes_[i].leaf() || 2 * i + 1 >= nodes_.size();
-  }
-
-  // Given a direction and a node index, return the index of the corresponding
-  // child.
-  std::size_t walk_to(SplitDirection dir, std::size_t i) const {
-    return dir == SplitDirection::LEFT ? 2 * i + 1 : 2 * i + 2;
-  }
+  DecisionTree(std::size_t depth) : max_depth_(depth) {}
 
   // Walks the tree based on the feature vector and returns the leaf node.
-  const DecisionNode<Feature, Label, SplitterFn>& walk(
+  const DecisionNode<Feature, Label, SplitterFn>* walk(
       const std::vector<Feature>& features) const {
-    std::size_t node_index = 0;
-
+    const auto* current = root_.get();
     // Start at the root node and walk down the tree until we reach a leaf.
-    while (!is_leaf(node_index)) {
-      node_index =
-          walk_to(nodes_[node_index].split_direction(features), node_index);
+    while (!current->leaf()) {
+      const auto dir = current->split_direction(features);
+      const auto* next = current->get_child(dir);
+      if (next == nullptr) break;
+      current = next;
     }
-    return nodes_[node_index];
+    return current;
   }
 
   // Predict the label for a set of features.
   Label predict(const std::vector<Feature>& features) const {
-    return walk(features).predict();
+    return walk(features)->predict();
   }
 
   // Train the tree on the given dataset.
   void train(SampledDataSet<Feature, Label>& data_set) {
-    train_recurse(data_set, /* node_index=*/0, /* start=*/0,
-                  /* end=*/data_set.size());
+    root_.reset(new DecisionNode<Feature, Label, SplitterFn>());
+    train_recurse(data_set, root_.get(), /* start=*/0,
+                  /* end=*/data_set.size(), 0);
   }
 
   // Eliminating the explicit recursion did not provide any speed ups.  The
   // depth is pretty shallow.
   void train_recurse(SampledDataSet<Feature, Label>& data_set,
-                     std::size_t node_index, std::size_t start,
-                     std::size_t end) {
-    if (node_index >= nodes_.size() || start >= end) {
-      return;
-    }
-
+                     DecisionNode<Feature, Label, SplitterFn>* current,
+                     std::size_t start, std::size_t end,
+                     std::size_t current_depth) {
     // Train the current node.
-    nodes_[node_index].train(data_set, start, end);
+    current->train(data_set, start, end);
 
     // The the node is a leaf then initialize the mahalanobis distance
     // calculator for feature transformation.
-    if (is_leaf(node_index)) {
-      nodes_[node_index].initialize_mahalanobis(data_set, start, end);
+    if (current->leaf() || current_depth == max_depth_) {
+      current->make_leaf();
+      current->initialize_mahalanobis(data_set, start, end);
       return;
     }
 
@@ -75,7 +64,7 @@ class DecisionTree {
     auto pivot_iter = std::partition(
         data_set.begin() + start, data_set.begin() + end,
         [&](const auto& sample) {
-          return nodes_[node_index].split_direction(sample.get().features) ==
+          return current->split_direction(sample.get().features) ==
                  SplitDirection::LEFT;
         });
 
@@ -83,14 +72,20 @@ class DecisionTree {
 
     // Train the left and right nodes on the portion of the data that was split
     // to them.
-    train_recurse(data_set, walk_to(SplitDirection::LEFT, node_index), start,
-                  mid);
-    train_recurse(data_set, walk_to(SplitDirection::RIGHT, node_index), mid,
-                  end);
+    if (mid != start) {
+      train_recurse(data_set, current->make_child(SplitDirection::LEFT), start,
+                    mid, current_depth + 1);
+    }
+
+    if (mid != end) {
+      train_recurse(data_set, current->make_child(SplitDirection::RIGHT), mid,
+                    end, current_depth + 1);
+    }
   }
 
  private:
-  std::vector<DecisionNode<Feature, Label, SplitterFn>> nodes_;
+  std::unique_ptr<DecisionNode<Feature, Label, SplitterFn>> root_;
+  std::size_t max_depth_;
 };
 
 }  // namespace rf
