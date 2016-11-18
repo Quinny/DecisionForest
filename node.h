@@ -14,7 +14,7 @@
 namespace qp {
 namespace rf {
 
-const int splits_to_try = 20;
+const int splits_to_try = 56;
 
 enum class SplitDirection { LEFT, RIGHT };
 
@@ -37,8 +37,7 @@ class DecisionNode {
     // training this node, we can predict early.
     if (single_label<Feature, Label>(dataset.begin() + start,
                                      dataset.begin() + end)) {
-      leaf_ = true;
-      // return;
+      make_leaf();
     }
 
     double min_impurity = std::numeric_limits<double>::max();
@@ -124,9 +123,32 @@ class DecisionNode {
   // Whether or not this node is ready to predict.
   bool leaf() const { return leaf_; }
 
+  bool make_leaf() {
+    leaf_ = true;
+    left_.reset();
+    right_.reset();
+  }
+
+  DecisionNode<Feature, Label, SplitterFn>* make_child(SplitDirection dir) {
+    if (dir == SplitDirection::LEFT) {
+      left_.reset(new DecisionNode<Feature, Label, SplitterFn>());
+      return left_.get();
+    } else {
+      right_.reset(new DecisionNode<Feature, Label, SplitterFn>());
+      return right_.get();
+    }
+  }
+
+  const DecisionNode<Feature, Label, SplitterFn>* get_child(
+      SplitDirection dir) const {
+    return dir == SplitDirection::LEFT ? left_.get() : right_.get();
+  }
+
  private:
   MahalanobisCalculator mc_;
   std::vector<FeatureIndex> distro_project_;
+
+  std::unique_ptr<DecisionNode<Feature, Label, SplitterFn>> left_, right_;
 
   Label prediction_;
   SplitterFn splitter_;
