@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <memory>
 #include <unordered_map>
 
 #include "criterion.h"
@@ -14,7 +15,7 @@
 namespace qp {
 namespace rf {
 
-const int splits_to_try = 56;
+const int splits_to_try = 84;
 
 enum class SplitDirection { LEFT, RIGHT };
 
