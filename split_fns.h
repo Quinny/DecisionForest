@@ -9,6 +9,17 @@
 namespace qp {
 namespace rf {
 
+// This class is totally symbolic.  Split functions should conform to this
+// interface.
+template <typename Feature, typename Label>
+class SplitFunction {
+  virtual void train(const qp::rf::SampledDataSet<Feature, Label>&, std::size_t,
+                     std::size_t) = 0;
+  virtual qp::rf::SplitDirection apply(const std::vector<Feature>&) const = 0;
+  virtual const std::vector<FeatureIndex>& get_features() const = 0;
+  virtual std::size_t n_input_features() const = 0;
+};
+
 template <typename Feature, typename Label>
 class RandomUnivariateSplit {
  public:
@@ -35,6 +46,8 @@ class RandomUnivariateSplit {
   const std::vector<FeatureIndex> get_features() const {
     return {feature_index_};
   }
+
+  std::size_t n_input_features() const { return 1; }
 
  private:
   FeatureIndex feature_index_;
@@ -80,6 +93,8 @@ class RandomMultivariateSplit {
     return feature_indicies_;
   }
 
+  std::size_t n_input_features() const { return N; }
+
  private:
   std::vector<FeatureIndex> feature_indicies_;
   std::vector<Feature> thresholds_;
@@ -116,6 +131,8 @@ class ModeVsAllPerceptronSplit {
   }
 
   const std::vector<FeatureIndex>& get_features() const { return projection_; }
+
+  std::size_t n_input_features() const { return N; }
 
  private:
   SingleLayerPerceptron<Feature, Label, StepActivation> layer_;
@@ -197,6 +214,8 @@ class HighestAverageSigmoidActivation {
   }
 
   const std::vector<FeatureIndex>& get_features() const { return projection_; }
+
+  std::size_t n_input_features() const { return N; }
 
  private:
   std::unique_ptr<SingleLayerPerceptron<Feature, Label, SigmoidActivation>>

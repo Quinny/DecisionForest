@@ -15,8 +15,6 @@
 namespace qp {
 namespace rf {
 
-const int splits_to_try = 84;
-
 enum class SplitDirection { LEFT, RIGHT };
 
 // Represents a single node in a tree.
@@ -46,6 +44,10 @@ class DecisionNode {
 
     // Try different split functions and choose the one which results in the
     // least impurity.
+
+    const auto total_features = dataset.front().get().features.size();
+    const auto splits_to_try =
+        std::sqrt(total_features) * splitter_.n_input_features();
     for (int i = 0; i < splits_to_try; ++i) {
       SplitterFn candidate_split;
       candidate_split.train(dataset, start, end);
