@@ -14,7 +14,7 @@ template <typename Feature, typename Label, typename SplitterFn>
 class DecisionTree {
  public:
   // Create a DecisionTree with a given depth.
-  DecisionTree(std::size_t depth) : max_depth_(depth) {}
+  DecisionTree(int max_depth) : max_depth_(max_depth) {}
 
   // Walks the tree based on the feature vector and returns the leaf node.
   const DecisionNode<Feature, Label, SplitterFn>* walk(
@@ -46,8 +46,7 @@ class DecisionTree {
   // depth is pretty shallow.
   void train_recurse(SampledDataSet<Feature, Label>& data_set,
                      DecisionNode<Feature, Label, SplitterFn>* current,
-                     std::size_t start, std::size_t end,
-                     std::size_t current_depth) {
+                     std::size_t start, std::size_t end, int current_depth) {
     // Train the current node.
     current->train(data_set, start, end);
 
@@ -85,7 +84,7 @@ class DecisionTree {
 
  private:
   std::unique_ptr<DecisionNode<Feature, Label, SplitterFn>> root_;
-  std::size_t max_depth_;
+  int max_depth_;
 };
 
 }  // namespace rf
