@@ -41,32 +41,35 @@ class RandomUnivariateSplit {
   Feature threshold_;
 };
 
-// Splits on N features randomly.
-// TODO Template for feauture and label.
-// TODO Rethink this.  It doesn't work well with higher than 1 dimension.
-template <int N>
-class NDimensionalSplit {
+template <typename Feature, typename Label, int N>
+class RandomMultivariateSplit {
  public:
-  void train(const qp::rf::SampledDataSet<int, int>& set, std::size_t s,
+  void train(const qp::rf::SampledDataSet<Feature, Label>& set, std::size_t s,
              std::size_t e) {
-    for (int i = 0; i < N; ++i) {
-      auto feature_index = qp::rf::random_range<FeatureIndex>(
-          0ul, set.front().get().features.size());
-      auto feature_range = std::minmax_element(
-          set.begin() + s, set.begin() + e,
-          qp::rf::CompareOnFeature<int, int>(feature_index));
-      auto low = feature_range.first->get().features[feature_index];
-      auto high = feature_range.second->get().features[feature_index];
-      auto threshold = qp::rf::random_range<int>(low, high);
+    const auto total_features = set.front().get().features.size();
+    // feature_index_ = random_range<FeatureIndex>(0, total_features - 1);
+    generate_back_n(feature_indicies_, N, [&]() {
+      return random_range<FeatureIndex>(0, total_features - 1);
+    });
 
-      feature_indexes.emplace_back(feature_index);
-      thresholds.emplace_back(threshold);
-    }
+    thresholds_.resize(N);
+    std::transform(feature_indicies_.begin(), feature_indicies_.end(),
+                   thresholds_.begin(), [&](const FeatureIndex i) {
+                     const auto feature_range = std::minmax_element(
+                         set.begin() + s, set.begin() + e,
+                         qp::rf::CompareOnFeature<Feature, Label>(i));
+                     const auto low = feature_range.first->get().features[i];
+                     const auto high = feature_range.second->get().features[i];
+                     const auto threshold =
+                         qp::rf::random_real_range<Feature>(low, high);
+                     return threshold;
+
+                   });
   }
 
-  qp::rf::SplitDirection apply(const std::vector<int>& features) const {
-    for (unsigned i = 0; i < feature_indexes.size(); ++i) {
-      if (features[feature_indexes[i]] < thresholds[i]) {
+  qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
+    for (unsigned i = 0; i < feature_indicies_.size(); ++i) {
+      if (features[feature_indicies_[i]] < thresholds_[i]) {
         return qp::rf::SplitDirection::LEFT;
       }
     }
@@ -74,12 +77,12 @@ class NDimensionalSplit {
   }
 
   const std::vector<FeatureIndex>& get_features() const {
-    return feature_indexes;
+    return feature_indicies_;
   }
 
  private:
-  std::vector<FeatureIndex> feature_indexes;
-  std::vector<int> thresholds;
+  std::vector<FeatureIndex> feature_indicies_;
+  std::vector<Feature> thresholds_;
 };
 
 template <typename Feature, typename Label, int N>
