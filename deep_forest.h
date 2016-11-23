@@ -11,13 +11,13 @@ namespace rf {
 // A configuration for a layer of a deep forest.
 struct LayerConfig {
   std::size_t trees;
-  std::size_t depth;
+  int depth;
 
   // For convenience sake. Allows for things like:
   // vector<LayerConfig> hidden_layers = {
   //    {50, 2}, {100, 5}, {200, 8}
   // };
-  LayerConfig(std::initializer_list<std::size_t> init)
+  LayerConfig(std::initializer_list<int> init)
       : trees(*init.begin()), depth(*(init.begin() + 1)) {}
 };
 

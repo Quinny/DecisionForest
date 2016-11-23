@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <memory>
 #include <unordered_map>
 
 #include "criterion.h"
@@ -13,8 +14,6 @@
 
 namespace qp {
 namespace rf {
-
-const int splits_to_try = 56;
 
 enum class SplitDirection { LEFT, RIGHT };
 
@@ -45,6 +44,10 @@ class DecisionNode {
 
     // Try different split functions and choose the one which results in the
     // least impurity.
+
+    const auto total_features = dataset.front().get().features.size();
+    const auto splits_to_try =
+        std::sqrt(total_features) * splitter_.n_input_features();
     for (int i = 0; i < splits_to_try; ++i) {
       SplitterFn candidate_split;
       candidate_split.train(dataset, start, end);
