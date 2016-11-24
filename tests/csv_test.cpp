@@ -14,9 +14,8 @@ TEST_F(CsvTest, ReadAll) {
 
   std::stringstream stream(csv_dataset);
 
-  const auto dataset =
-      qp::rf::read_csv_data_set<int, int>(stream, /* n_samples=*/2,
-                                          /*n_features=*/3);
+  const auto dataset = qp::rf::read_csv_data_set(stream, /* n_samples=*/2,
+                                                 /*n_features=*/3);
 
   EXPECT_EQ(dataset.size(), 2);
 
@@ -35,9 +34,8 @@ TEST_F(CsvTest, ReadSome) {
 
   std::stringstream stream(csv_dataset);
 
-  const auto dataset =
-      qp::rf::read_csv_data_set<double, int>(stream, /* n_samples=*/2,
-                                             /*n_features=*/3);
+  const auto dataset = qp::rf::read_csv_data_set(stream, /* n_samples=*/2,
+                                                 /*n_features=*/3);
 
   EXPECT_EQ(dataset.size(), 2);
 

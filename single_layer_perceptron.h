@@ -5,16 +5,17 @@
 #include <functional>
 #include <numeric>
 #include <vector>
+
 #include "functional.h"
 #include "random.h"
+#include "vector_util.h"
 
 namespace qp {
 namespace rf {
 
 namespace {
 
-template <typename Feature>
-double weight_update(const Feature& feature, const double error,
+double weight_update(const double& feature, const double error,
                      const double learning_rate, const double current_weight) {
   return current_weight + (learning_rate * error * feature);
 }
@@ -24,7 +25,7 @@ using Matrix = std::vector<std::vector<T>>;
 
 }  // namespace
 
-template <typename Feature, typename Label, typename ActivationFn>
+template <typename ActivationFn>
 class SingleLayerPerceptron {
  public:
   // For testing only.
@@ -53,7 +54,7 @@ class SingleLayerPerceptron {
                     std::bind(random_real_range<double>, -1, 1));
   }
 
-  std::vector<double> predict(const std::vector<Feature>& features) const {
+  std::vector<double> predict(const std::vector<double>& features) const {
     std::vector<double> output(n_outputs_);
     for (auto i = 0ul; i < n_outputs_; ++i) {
       output[i] =
@@ -63,7 +64,7 @@ class SingleLayerPerceptron {
     return output;
   }
 
-  void learn(const std::vector<Feature>& features,
+  void learn(const std::vector<double>& features,
              const std::vector<double>& true_output) {
     const auto actual_output = predict(features);
     for (auto i = 0ul; i < n_outputs_; ++i) {

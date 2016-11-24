@@ -19,46 +19,42 @@ enum class SplitDirection { LEFT, RIGHT };
 
 // Represents a single node in a tree.
 // TODO Only decide on a subset of features.
-template <typename Feature, typename Label, typename SplitterFn>
+template <typename SplitterFn>
 class DecisionNode {
  public:
   DecisionNode() : leaf_(false){};
 
   // Train this node to decide on the dataset rows between start and end.
-  void train(const SampledDataSet<Feature, Label>& dataset, std::size_t start,
-             std::size_t end) {
+  void train(SDIter first, SDIter last) {
     // The prediction at this node is the most occuring label in the incoming
     // samples.
-    prediction_ = mode_label<Feature, Label>(dataset.begin() + start,
-                                             dataset.begin() + end);
+    prediction_ = mode_label(first, last);
 
     // If the dataset only contains one label, then there is no point in
     // training this node, we can predict early.
-    if (single_label<Feature, Label>(dataset.begin() + start,
-                                     dataset.begin() + end)) {
+    if (single_label(first, last)) {
       make_leaf();
     }
 
     double min_impurity = std::numeric_limits<double>::max();
-    auto total_samples = static_cast<double>(end - start + 1);
+    auto total_samples = static_cast<double>(last - first + 1);
 
     // Try different split functions and choose the one which results in the
     // least impurity.
-
-    const auto total_features = dataset.front().get().features.size();
+    const auto total_features = first->get().features.size();
     const auto splits_to_try =
         std::sqrt(total_features) * splitter_.n_input_features();
     for (int i = 0; i < splits_to_try; ++i) {
       SplitterFn candidate_split;
-      candidate_split.train(dataset, start, end);
+      candidate_split.train(first, last);
 
-      std::map<Label, std::size_t> went_left, went_right;
-      for (unsigned sample = start; sample != end; ++sample) {
-        if (candidate_split.apply(dataset[sample].get().features) ==
+      LabelHistogram went_left, went_right;
+      for (auto sample = first; sample != last; ++sample) {
+        if (candidate_split.apply(sample->get().features) ==
             SplitDirection::LEFT) {
-          ++went_left[dataset[sample].get().label];
+          ++went_left[sample->get().label];
         } else {
-          ++went_right[dataset[sample].get().label];
+          ++went_right[sample->get().label];
         }
       }
 
@@ -76,24 +72,23 @@ class DecisionNode {
   }
 
   // Determine the direction of the split based on the feautres.
-  SplitDirection split_direction(const std::vector<Feature>& features) const {
+  SplitDirection split_direction(const std::vector<double>& features) const {
     return splitter_.apply(features);
   }
 
   // Predict the label at this node based on the mode label of the incoming
   // samples.
-  Label predict() const { return prediction_; }
+  double predict() const { return prediction_; }
 
   // Initialize the mahalanobis distance calculator.  Picks two random features
   // and then calcuates the distribution of those features for the dominant
   // label at this node.
-  void initialize_mahalanobis(const SampledDataSet<Feature, Label>& dataset,
-                              std::size_t start, std::size_t end) {
+  void initialize_mahalanobis(SDIter first, SDIter last) {
     distro_project_ = splitter_.get_features();
 
     std::size_t distro_size = 0;
-    for (auto i = start; i != end; ++i) {
-      if (dataset[i].get().label == prediction_) {
+    for (auto i = first; i != last; ++i) {
+      if (i->get().label == prediction_) {
         ++distro_size;
       }
     }
@@ -101,11 +96,10 @@ class DecisionNode {
     cv::Mat distribution(distro_size, distro_project_.size(), CV_64F);
     std::size_t c = 0;
 
-    for (auto i = start; i != end; ++i) {
-      if (dataset[i].get().label == prediction_) {
+    for (auto i = first; i != last; ++i) {
+      if (i->get().label == prediction_) {
         for (int j = 0; j < distro_project_.size(); ++j) {
-          distribution.at<double>(c, j) =
-              dataset[i].get().features[distro_project_[j]];
+          distribution.at<double>(c, j) = i->get().features[distro_project_[j]];
         }
         ++c;
       }
@@ -114,7 +108,7 @@ class DecisionNode {
     mc_.initialize(distribution);
   }
 
-  double mahalanobis_distance(const std::vector<Feature>& features) const {
+  double mahalanobis_distance(const std::vector<double>& features) const {
     cv::Mat projected(1, distro_project_.size(), CV_64F);
     for (int i = 0; i < distro_project_.size(); ++i) {
       projected.at<double>(0, i) = features[distro_project_[i]];
@@ -132,18 +126,17 @@ class DecisionNode {
     right_.reset();
   }
 
-  DecisionNode<Feature, Label, SplitterFn>* make_child(SplitDirection dir) {
+  DecisionNode<SplitterFn>* make_child(SplitDirection dir) {
     if (dir == SplitDirection::LEFT) {
-      left_.reset(new DecisionNode<Feature, Label, SplitterFn>());
+      left_.reset(new DecisionNode<SplitterFn>());
       return left_.get();
     } else {
-      right_.reset(new DecisionNode<Feature, Label, SplitterFn>());
+      right_.reset(new DecisionNode<SplitterFn>());
       return right_.get();
     }
   }
 
-  const DecisionNode<Feature, Label, SplitterFn>* get_child(
-      SplitDirection dir) const {
+  const DecisionNode<SplitterFn>* get_child(SplitDirection dir) const {
     return dir == SplitDirection::LEFT ? left_.get() : right_.get();
   }
 
@@ -151,9 +144,9 @@ class DecisionNode {
   MahalanobisCalculator mc_;
   std::vector<FeatureIndex> distro_project_;
 
-  std::unique_ptr<DecisionNode<Feature, Label, SplitterFn>> left_, right_;
+  std::unique_ptr<DecisionNode<SplitterFn>> left_, right_;
 
-  Label prediction_;
+  double prediction_;
   SplitterFn splitter_;
   bool leaf_;
 };
