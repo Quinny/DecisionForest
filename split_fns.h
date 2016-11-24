@@ -116,8 +116,9 @@ class ModeVsAllPerceptronSplit {
     const std::vector<double> fire = {1};
     const std::vector<double> not_fire = {-1};
 
+    std::vector<Feature> projected(N);
     for (unsigned i = s; i < e; ++i) {
-      const auto projected = project(data_set[i].get().features, projection_);
+      project(data_set[i].get().features, projection_, projected.begin());
       layer_.learn(projected,
                    data_set[i].get().label == should_fire ? fire : not_fire);
     }
@@ -168,9 +169,10 @@ class HighestAverageSigmoidActivation {
 
     // First pass train the perceptron.
     std::vector<double> expected_output(label_ids.size(), 0);
+    std::vector<Feature> projected(N);
     for (auto i = s; i != e; ++i) {
       expected_output[label_ids[data_set[i].get().label]] = 1;
-      const auto projected = project(data_set[i].get().features, projection_);
+      project(data_set[i].get().features, projection_, projected.begin());
       layer_->learn(projected, expected_output);
       expected_output[label_ids[data_set[i].get().label]] = 0;
     }
@@ -178,11 +180,10 @@ class HighestAverageSigmoidActivation {
     // Second pass determine which output neuron contains the maximum average
     // activation value.
     std::vector<double> average_activations(label_ids.size(), 0);
-    std::vector<double> output;
     double n_samples_real = static_cast<double>(e - s + 1);
     for (auto i = s; i != e; ++i) {
-      const auto projected = project(data_set[i].get().features, projection_);
-      output = layer_->predict(projected);
+      project(data_set[i].get().features, projection_, projected.begin());
+      const auto output = layer_->predict(projected);
       for (auto activation = 0ul; activation < output.size(); ++activation) {
         average_activations[activation] += output[activation] / n_samples_real;
       }
@@ -199,13 +200,6 @@ class HighestAverageSigmoidActivation {
   }
 
   qp::rf::SplitDirection apply(const std::vector<Feature>& features) const {
-    // This node was not reached during training.
-    if (projection_.empty()) {
-      return qp::rf::SplitDirection::LEFT;
-      // generate_back_n(projection_, N, std::bind(random_range<FeatureIndex>,
-      // 0,
-      // features.size() - 1));
-    }
     const auto projected = project(features, projection_);
     const auto output = layer_->predict(projected);
     return output[maximum_activation_neuron] >= 0.5
