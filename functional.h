@@ -39,14 +39,18 @@ void generate_back_n(Container& c, std::size_t n, const Generator& g) {
   std::generate_n(std::back_inserter(c), n, g);
 }
 
+template <typename T, typename Iter>
+void project(const std::vector<T>& v, const std::vector<std::size_t>& indices,
+             Iter out) {
+  std::transform(indices.begin(), indices.end(), out,
+                 [&v](const std::size_t i) { return v[i]; });
+}
+
 template <typename T>
 std::vector<T> project(const std::vector<T>& v,
                        const std::vector<std::size_t>& indicies) {
-  std::vector<T> ret;
-  ret.reserve(indicies.size());
-  for (const auto& i : indicies) {
-    ret.push_back(v[i]);
-  }
+  std::vector<T> ret(indicies.size());
+  project(v, indicies, ret.begin());
   return ret;
 }
 
