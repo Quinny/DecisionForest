@@ -23,8 +23,8 @@ class DecisionForest {
   // will be trained a bagged subset of the data of size
   // |training data| * bag_percentage.
   DecisionForest(std::size_t n_trees, std::size_t max_depth,
-                 double bag_percentage)
-      : bag_percentage_(bag_percentage) {
+                 double bag_percentage, qp::threading::Threadpool* thread_pool)
+      : bag_percentage_(bag_percentage), thread_pool_(thread_pool) {
     trees_.reserve(n_trees);
     for (unsigned i = 0; i < n_trees; ++i) {
       trees_.emplace_back(max_depth);
@@ -33,16 +33,10 @@ class DecisionForest {
 
   // Train each tree in parallel on a bagged sample of the dataset.
   void train(const DataSet<Feature, Label>& data_set) {
-#ifndef N_WORKERS
-    threading::Threadpool thread_pool;
-#else
-    threading::Threadpool thread_pool(N_WORKERS);
-#endif
-
     std::vector<std::future<void>> futures;
     futures.reserve(trees_.size());
     for (auto& tree : trees_) {
-      futures.emplace_back(thread_pool.add([&data_set, &tree, this]() {
+      futures.emplace_back(thread_pool_->add([&data_set, &tree, this]() {
         auto sample = sample_with_replacement(
             data_set, data_set.size() * bag_percentage_);
         tree.train(sample);
@@ -107,6 +101,7 @@ class DecisionForest {
  private:
   std::vector<DecisionTree<Feature, Label, SpiltterFn>> trees_;
   double bag_percentage_;
+  qp::threading::Threadpool* thread_pool_;
 };
 
 }  // namespace rf
