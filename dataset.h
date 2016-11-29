@@ -142,6 +142,40 @@ void zero_center_mean(DataSet& dataset, const std::vector<double>& means) {
   }
 }
 
+bool constant_feature(DataSet& dataset, FeatureIndex fx) {
+  const auto first_val = dataset.front().features[fx];
+  return std::all_of(dataset.begin(), dataset.end(), [&](const auto& example) {
+    return example.features[fx] == first_val;
+  });
+}
+
+std::vector<FeatureIndex> remove_constant_features(DataSet& dataset) {
+  std::vector<FeatureIndex> variable_features;
+  const auto total_features = dataset.front().features.size();
+  for (FeatureIndex i = 0; i < total_features; ++i) {
+    if (!constant_feature(dataset, i)) {
+      variable_features.push_back(i);
+    }
+  }
+
+  for (auto& example : dataset) {
+    std::vector<double> nf(variable_features.size());
+    project(example.features, variable_features, nf.begin());
+    example.features = std::move(nf);
+  }
+
+  return variable_features;
+}
+
+void remove_constant_features(
+    DataSet& dataset, const std::vector<FeatureIndex>& variable_features) {
+  for (auto& example : dataset) {
+    std::vector<double> nf(variable_features.size());
+    project(example.features, variable_features, nf.begin());
+    example.features = std::move(nf);
+  }
+}
+
 }  // namespace rf
 }  // namespace qp
 #endif /* DATASET_H */
