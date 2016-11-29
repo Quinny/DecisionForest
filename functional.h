@@ -34,26 +34,6 @@ struct Snd {
 template <typename T, typename U, typename Cmp = std::less<U>>
 using CompareOnSecond = On<std::pair<T, U>, Cmp, Snd<T, U>>;
 
-template <typename Container, typename Generator>
-void generate_back_n(Container& c, std::size_t n, const Generator& g) {
-  std::generate_n(std::back_inserter(c), n, g);
-}
-
-template <typename T, typename Iter>
-void project(const std::vector<T>& v, const std::vector<std::size_t>& indices,
-             Iter out) {
-  std::transform(indices.begin(), indices.end(), out,
-                 [&v](const std::size_t i) { return v[i]; });
-}
-
-template <typename T>
-std::vector<T> project(const std::vector<T>& v,
-                       const std::vector<std::size_t>& indicies) {
-  std::vector<T> ret(indicies.size());
-  project(v, indicies, ret.begin());
-  return ret;
-}
-
 }  // namespace rf
 }  // namespace qp
 

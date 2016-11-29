@@ -12,8 +12,8 @@ struct EchoActivation {
 };
 
 TEST_F(SingleLayerPerceptronTest, NoTraining) {
-  qp::rf::SingleLayerPerceptron<int, int, EchoActivation> slp(
-      {{1, 1}, {2, 1}, {3, 0}}, {0, 1, 2}, 1);
+  qp::rf::SingleLayerPerceptron<EchoActivation> slp({{1, 1}, {2, 1}, {3, 0}},
+                                                    {0, 1, 2}, 1);
 
   const auto output = slp.predict({2, 3});
 
@@ -22,8 +22,8 @@ TEST_F(SingleLayerPerceptronTest, NoTraining) {
 }
 
 TEST_F(SingleLayerPerceptronTest, WeightUpdate) {
-  qp::rf::SingleLayerPerceptron<int, int, EchoActivation> slp(
-      {{1, 1}, {2, 1}, {3, 0}}, {0, 1, 2}, 1);
+  qp::rf::SingleLayerPerceptron<EchoActivation> slp({{1, 1}, {2, 1}, {3, 0}},
+                                                    {0, 1, 2}, 1);
 
   // This should cause no weight updates.
   slp.learn({2, 3}, {5, 8, 8});
@@ -54,7 +54,7 @@ TEST_F(SingleLayerPerceptronTest, LearnOR) {
     double operator()(double x) const { return x >= 0 ? 1 : -1; }
   };
 
-  qp::rf::SingleLayerPerceptron<double, double, Step> slp(2, 1, 0.01);
+  qp::rf::SingleLayerPerceptron<Step> slp(2, 1, 0.01);
 
   double t = 1;
   double f = -1;

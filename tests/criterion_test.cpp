@@ -3,8 +3,10 @@
 
 class CriterionTest : public ::testing::Test {};
 
+using qp::rf::LabelHistogram;
+
 TEST_F(CriterionTest, ZeroImpurity) {
-  std::map<int, std::size_t> label_histogram{{1, 10}};
+  LabelHistogram label_histogram{{1, 10}};
   auto elements_impurity = qp::rf::gini_impurity(label_histogram);
 
   EXPECT_EQ(elements_impurity.first, 10);
@@ -12,7 +14,7 @@ TEST_F(CriterionTest, ZeroImpurity) {
 }
 
 TEST_F(CriterionTest, NonZeroImpurity) {
-  std::map<int, std::size_t> label_histogram{{1, 3}, {4, 7}, {5, 2}};
+  LabelHistogram label_histogram{{1, 3}, {4, 7}, {5, 2}};
   auto elements_impurity = qp::rf::gini_impurity(label_histogram);
 
   const double expected_size = 12;

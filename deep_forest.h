@@ -31,7 +31,7 @@ struct LayerConfig {
 // currently only works for the input layer.  This could be fixed with a simple
 // type trait that subs in a different feature type to a given split function.
 // More thought needs to be put into this...
-template <typename Feature, typename Label, typename SplitterFn, typename Hack>
+template <typename SplitterFn>
 class DeepForest {
  public:
   // Construct the forest based on the layer configurations.
@@ -49,7 +49,7 @@ class DeepForest {
   }
 
   // Train the deep forest on the given dataset.
-  void train(const DataSet<Feature, Label>& data_set) {
+  void train(const DataSet& data_set) {
     LOG << "training input layer" << std::endl;
     input_layer_.train(data_set);
     auto transformed = input_layer_.transform(data_set);
@@ -64,7 +64,7 @@ class DeepForest {
     output_layer_.train(transformed);
   }
 
-  Label predict(const std::vector<Feature>& features) {
+  double predict(const std::vector<double>& features) {
     auto transformed = input_layer_.transform(features);
     for (const auto& layer : hidden_layers_) {
       transformed = layer.transform(transformed);
@@ -73,9 +73,9 @@ class DeepForest {
   }
 
  private:
-  DecisionForest<Feature, Label, SplitterFn> input_layer_;
-  std::vector<DecisionForest<double, Label, Hack>> hidden_layers_;
-  DecisionForest<double, Label, Hack> output_layer_;
+  DecisionForest<SplitterFn> input_layer_;
+  std::vector<DecisionForest<SplitterFn>> hidden_layers_;
+  DecisionForest<SplitterFn> output_layer_;
 };
 
 }  // namespace rf

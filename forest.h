@@ -16,7 +16,7 @@ namespace rf {
 // using N threads, where N is the number of cores on the host machine.
 //
 // https://en.wikipedia.org/wiki/Bootstrap_aggregating
-template <typename Feature, typename Label, typename SpiltterFn>
+template <typename SpiltterFn>
 class DecisionForest {
  public:
   // Grow a forest of size |n_trees|, each of depth |max_depth|.  Each tree
@@ -32,7 +32,7 @@ class DecisionForest {
   }
 
   // Train each tree in parallel on a bagged sample of the dataset.
-  void train(const DataSet<Feature, Label>& data_set) {
+  void train(const DataSet& data_set) {
     std::vector<std::future<void>> futures;
     futures.reserve(trees_.size());
     for (auto& tree : trees_) {
@@ -52,7 +52,7 @@ class DecisionForest {
   // Transform the vector of features by computing the mahalanobis distance
   // to the leaf node in each tree which would classify the data.
   // The resulting vector will be 1 x |trees|
-  std::vector<double> transform(const std::vector<Feature>& features) const {
+  std::vector<double> transform(const std::vector<double>& features) const {
     std::vector<double> transformed(trees_.size());
     for (auto i = 0UL; i < trees_.size(); ++i) {
       transformed[i] = trees_[i].walk(features)->mahalanobis_distance(features);
@@ -61,11 +61,8 @@ class DecisionForest {
   }
 
   // Transform an entire dataset of features.
-  DataSet<double, Label> transform(
-      const DataSet<Feature, Label>& data_set) const {
-    auto transformed =
-        empty_data_set<double, Label>(data_set.size(), trees_.size());
-
+  DataSet transform(const DataSet& data_set) const {
+    auto transformed = empty_data_set(data_set.size(), trees_.size());
     for (auto sample = 0ul; sample < data_set.size(); ++sample) {
       // Carry over the same label.
       transformed[sample].label = data_set[sample].label;
@@ -87,19 +84,19 @@ class DecisionForest {
   //
   // This could be parallelized, but running a feature vector through a tree
   // is generally very fast and thus unnecessary.
-  Label predict(const std::vector<Feature>& features) {
-    std::unordered_map<Label, int> predictions;
+  double predict(const std::vector<double>& features) {
+    LabelHistogram predictions;
     for (const auto& tree : trees_) {
       ++predictions[tree.predict(features)];
     }
 
     auto prediction = std::max_element(predictions.begin(), predictions.end(),
-                                       CompareOnSecond<Label, int>());
+                                       CompareOnSecond<double, std::size_t>());
     return prediction->first;
   }
 
  private:
-  std::vector<DecisionTree<Feature, Label, SpiltterFn>> trees_;
+  std::vector<DecisionTree<SpiltterFn>> trees_;
   double bag_percentage_;
   qp::threading::Threadpool* thread_pool_;
 };

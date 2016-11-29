@@ -5,21 +5,22 @@
 #include "gtest/gmock.h"
 #include "gtest/gtest.h"
 
+using ::testing::DoubleEq;
 using ::testing::ElementsAre;
 class DataSetTest : public ::testing::Test {};
 
 TEST_F(DataSetTest, CompareOnFeature) {
-  auto dataset = qp::rf::empty_data_set<int, int>(3, 3);
+  auto dataset = qp::rf::empty_data_set(3, 3);
   dataset.front().features = {1, 2, 3};
   dataset[1].features = {5, 7, 9};
   dataset[2].features = {9, 0, 11};
 
   const auto t1 = std::max_element(dataset.begin(), dataset.end(),
-                                   qp::rf::CompareOnFeature<int, int>(1));
+                                   qp::rf::CompareOnFeature<>(1));
   EXPECT_THAT(t1->features, ElementsAre(5, 7, 9));
 
   const auto t2 = std::max_element(dataset.begin(), dataset.end(),
-                                   qp::rf::CompareOnFeature<int, int>(0));
+                                   qp::rf::CompareOnFeature<>(0));
   EXPECT_THAT(t2->features, ElementsAre(9, 0, 11));
 }
 
@@ -30,31 +31,28 @@ TEST_F(DataSetTest, ModeLabel) {
       "1, 8, 7\n";
 
   std::stringstream stream(csv_dataset);
-  const auto dataset = qp::rf::read_csv_data_set<int, int>(stream, 3, 2);
+  const auto dataset = qp::rf::read_csv_data_set(stream, 3, 2);
   auto sampled = qp::rf::sample_exactly(dataset);
 
-  const auto mode =
-      qp::rf::mode_label<int, int>(sampled.begin(), sampled.end());
+  const auto mode = qp::rf::mode_label(sampled.begin(), sampled.end());
   EXPECT_EQ(mode, 1);
 }
 
 TEST_F(DataSetTest, SingleLabel) {
-  auto dataset = qp::rf::empty_data_set<int, int>(3, 3);
+  auto dataset = qp::rf::empty_data_set(3, 3);
   dataset[0].label = 1;
   dataset[1].label = 5;
   dataset[2].label = 9;
 
   auto sampled = qp::rf::sample_exactly(dataset);
 
-  const auto t1 =
-      qp::rf::single_label<int, int>(sampled.begin(), sampled.end());
+  const auto t1 = qp::rf::single_label(sampled.begin(), sampled.end());
   EXPECT_FALSE(t1);
 
   dataset[1].label = 1;
   dataset[2].label = 1;
 
-  const auto t2 =
-      qp::rf::single_label<int, int>(sampled.begin(), sampled.end());
+  const auto t2 = qp::rf::single_label(sampled.begin(), sampled.end());
   EXPECT_TRUE(t2);
 }
 
@@ -65,13 +63,18 @@ TEST_F(DataSetTest, ZeroCenter) {
       "1, 8, 7\n";
 
   std::stringstream stream(csv_dataset);
-  auto dataset = qp::rf::read_csv_data_set<int, int>(stream, 3, 2);
+  auto dataset = qp::rf::read_csv_data_set(stream, 3, 2);
 
   // Mean for f1 = 5.666666
   // Mean for f2 = 6.333333
-  qp::rf::zero_center_mean(dataset);
+  const auto means = qp::rf::zero_center_mean(dataset);
 
-  EXPECT_THAT(dataset[0].features, ElementsAre(-3, -3));
-  EXPECT_THAT(dataset[1].features, ElementsAre(1, 2));
-  EXPECT_THAT(dataset[2].features, ElementsAre(2, 0));
+  EXPECT_THAT(means, ElementsAre(DoubleEq(5.666666), DoubleEq(6.33333)));
+
+  EXPECT_THAT(dataset[0].features,
+              ElementsAre(DoubleEq(-3.66667), DoubleEq(-3.33333)));
+  EXPECT_THAT(dataset[1].features,
+              ElementsAre(DoubleEq(1.33333), DoubleEq(2.66667)));
+  EXPECT_THAT(dataset[2].features,
+              ElementsAre(DoubleEq(2.33333), DoubleEq(0.66667)));
 }

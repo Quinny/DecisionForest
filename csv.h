@@ -9,11 +9,9 @@ namespace rf {
 
 // Read csv dataset from the given input stream.  Data should follow the format:
 // label,f1,f2,f3...
-template <typename Feature, typename Label>
-DataSet<Feature, Label> read_csv_data_set(std::istream& is,
-                                          std::size_t n_samples,
-                                          std::size_t n_features) {
-  auto set = qp::rf::empty_data_set<Feature, Label>(n_samples, n_features);
+DataSet read_csv_data_set(std::istream& is, std::size_t n_samples,
+                          std::size_t n_features) {
+  auto set = qp::rf::empty_data_set(n_samples, n_features);
   for (unsigned sample = 0; sample < n_samples; ++sample) {
     is >> set[sample].label;
     for (unsigned feature = 0; feature < n_features; ++feature) {

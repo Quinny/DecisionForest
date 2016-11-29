@@ -1,7 +1,7 @@
 #ifndef CRITERION_H
 #define CRITERION_H
 
-#include <map>
+#include "dataset.h"
 
 namespace qp {
 namespace rf {
@@ -12,9 +12,8 @@ namespace rf {
 // (all labels have an even number of occurances).
 // Returns a pair of (total_elements, impurity).
 // https://en.wikipedia.org/wiki/Decision_tree_learning#Gini_impurity
-template <typename Label>
 std::pair<std::size_t, double> gini_impurity(
-    const std::map<Label, std::size_t>& label_histogram) {
+    const LabelHistogram& label_histogram) {
   std::size_t total_elements = 0;
   for (const auto& label_count : label_histogram) {
     total_elements += label_count.second;
