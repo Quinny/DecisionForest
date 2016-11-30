@@ -47,12 +47,12 @@ class DecisionTree {
                      SDIter last, int current_depth) {
     // Train the current node.
     current->train(first, last);
+    current->initialize_mahalanobis(first, last);
 
     // The the node is a leaf then initialize the mahalanobis distance
     // calculator for feature transformation.
     if (current->leaf() || current_depth == max_depth_) {
       current->make_leaf();
-      current->initialize_mahalanobis(first, last);
       return;
     }
 

@@ -37,14 +37,16 @@ class DeepForest {
   // Construct the forest based on the layer configurations.
   DeepForest(LayerConfig input_layer_config,
              const std::vector<LayerConfig>& hidden_layer_configs,
-             LayerConfig output_layer_config, double bag_percentage)
+             LayerConfig output_layer_config, double bag_percentage,
+             qp::threading::Threadpool* thread_pool)
       : input_layer_(input_layer_config.trees, input_layer_config.depth,
-                     bag_percentage),
+                     bag_percentage, thread_pool),
         output_layer_(output_layer_config.trees, output_layer_config.depth,
-                      bag_percentage) {
+                      bag_percentage, thread_pool) {
     hidden_layers_.reserve(hidden_layer_configs.size());
     for (const auto& config : hidden_layer_configs) {
-      hidden_layers_.emplace_back(config.trees, config.depth, bag_percentage);
+      hidden_layers_.emplace_back(config.trees, config.depth, bag_percentage,
+                                  thread_pool);
     }
   }
 
