@@ -29,7 +29,7 @@ class RandomUnivariateSplit {
 
     const auto low = feature_range.first->get().features[feature_index_];
     const auto high = feature_range.second->get().features[feature_index_];
-    const auto threshold = qp::rf::random_real_range<double>(low, high);
+    threshold_ = qp::rf::random_real_range<double>(low, high);
   }
 
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {

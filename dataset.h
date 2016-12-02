@@ -14,17 +14,16 @@ namespace qp {
 namespace rf {
 
 // An example to be provided to a random forest.  Defined by a set of features
-// and a lable.
+// and a label.
 struct Example {
   std::vector<double> features;
   double label;
 };
 
-// An example that has been sampled from a dataset.  This allows for fast
-// copying when sampling.
+// An example that has been sampled from a dataset.  The reference wrapper
+// provides fast copying when sampling large datasets.
 using SampledExample = std::reference_wrapper<const Example>;
 
-// For readability.
 using FeatureIndex = std::size_t;
 
 // A comparator which compares the i'th feature of two training examples using
@@ -47,15 +46,14 @@ class CompareOnFeature {
   FeatureIndex fx_;
 };
 
-// A dataset is defined as a collection of training examples.
+// A dataset is a collection of training examples.
 using DataSet = std::vector<Example>;
 
-// A sampled dataset.  Examples are wrapped with a const reference wrapper to
-// avoid expensive copies when sampling.  Note that this means that the dataset
-// that provided the sample must outlive all sampled data sets.
+// A sampled dataset.  Again, fast copying.
 using SampledDataSet = std::vector<SampledExample>;
 
 using SDIter = SampledDataSet::iterator;
+
 using LabelHistogram = std::unordered_map<double, std::size_t>;
 
 // Generates an empty dataset with n_samples, each containing n_features.
@@ -88,7 +86,7 @@ SampledDataSet sample_exactly(const DataSet& dataset) {
   return sample;
 }
 
-// Find the most commonly occuring label in the dataset.
+// Find the most commonly occurring label in the dataset.
 double mode_label(SDIter start, SDIter end) {
   LabelHistogram histogram;
   while (start != end) {
@@ -111,30 +109,6 @@ bool single_label(SDIter start, SDIter end) {
   return std::all_of(start, end, equals_first_label);
 }
 
-// Centers the mean of the given dataset on 0.  Helps improve performance of
-// perceptron splitters.  Returns the mean vector.
-std::vector<double> zero_center_mean(DataSet& dataset) {
-  const auto n_features = dataset.front().features.size();
-  const auto n_samples_real = static_cast<double>(dataset.size());
-  std::vector<double> means(n_features, 0);
-
-  for (const auto& example : dataset) {
-    for (auto feature = 0ul; feature < n_features; ++feature) {
-      means[feature] += example.features[feature];
-    }
-  }
-
-  for (auto& mean : means) {
-    mean /= n_samples_real;
-  }
-
-  for (auto& example : dataset) {
-    vector_minus(example.features, means);
-  }
-
-  return means;
-}
-
 // Centers the dataset on a given mean vector.
 void zero_center_mean(DataSet& dataset, const std::vector<double>& means) {
   for (auto& example : dataset) {
@@ -142,38 +116,20 @@ void zero_center_mean(DataSet& dataset, const std::vector<double>& means) {
   }
 }
 
-bool constant_feature(DataSet& dataset, FeatureIndex fx) {
-  const auto first_val = dataset.front().features[fx];
-  return std::all_of(dataset.begin(), dataset.end(), [&](const auto& example) {
-    return example.features[fx] == first_val;
-  });
-}
+// Centers the mean of the given dataset on 0.  Helps improve performance
+// and convergence speed of perceptron splitters.  Returns the mean vector.
+std::vector<double> zero_center_mean(DataSet& dataset) {
+  const auto n_features = dataset.front().features.size();
+  const auto n_samples_real = static_cast<double>(dataset.size());
+  std::vector<double> means(n_features, 0);
 
-std::vector<FeatureIndex> remove_constant_features(DataSet& dataset) {
-  std::vector<FeatureIndex> variable_features;
-  const auto total_features = dataset.front().features.size();
-  for (FeatureIndex i = 0; i < total_features; ++i) {
-    if (!constant_feature(dataset, i)) {
-      variable_features.push_back(i);
+  for (const auto& example : dataset) {
+    for (auto feature = 0ul; feature < n_features; ++feature) {
+      means[feature] += example.features[feature] / n_samples_real;
     }
   }
-
-  for (auto& example : dataset) {
-    std::vector<double> nf(variable_features.size());
-    project(example.features, variable_features, nf.begin());
-    example.features = std::move(nf);
-  }
-
-  return variable_features;
-}
-
-void remove_constant_features(
-    DataSet& dataset, const std::vector<FeatureIndex>& variable_features) {
-  for (auto& example : dataset) {
-    std::vector<double> nf(variable_features.size());
-    project(example.features, variable_features, nf.begin());
-    example.features = std::move(nf);
-  }
+  zero_center_mean(dataset, means);
+  return means;
 }
 
 }  // namespace rf

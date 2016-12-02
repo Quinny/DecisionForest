@@ -12,8 +12,8 @@ namespace rf {
 
 // A collection of decision trees which each cast a vote towards the final
 // classificaiton of a sample.  Each tree is trained on a bagged (Bootstrap
-// aggregated) sample of the original data set. Tree training is run in parallel
-// using N threads, where N is the number of cores on the host machine.
+// aggregated) sample of the original data set. Tree training is done on the
+// provided threadpool.
 //
 // https://en.wikipedia.org/wiki/Bootstrap_aggregating
 template <typename SpiltterFn>
@@ -51,7 +51,7 @@ class DecisionForest {
 
   // Transform the vector of features by computing the mahalanobis distance
   // to the leaf node in each tree which would classify the data.
-  // The resulting vector will be 1 x |trees|
+  // The resulting vector will be 1 x |trees|.
   std::vector<double> transform(const std::vector<double>& features) const {
     std::vector<double> transformed(trees_.size());
     for (auto i = 0UL; i < trees_.size(); ++i) {
@@ -81,9 +81,6 @@ class DecisionForest {
   // Predict the label of a set of features.  This is done by predicting the
   // label using each of the trees in the forest, and then taking the majority
   // label over all trees.
-  //
-  // This could be parallelized, but running a feature vector through a tree
-  // is generally very fast and thus unnecessary.
   double predict(const std::vector<double>& features) {
     LabelHistogram predictions;
     for (const auto& tree : trees_) {

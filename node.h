@@ -18,7 +18,6 @@ namespace rf {
 enum class SplitDirection { LEFT, RIGHT };
 
 // Represents a single node in a tree.
-// TODO Only decide on a subset of features.
 template <typename SplitterFn>
 class DecisionNode {
  public:
@@ -26,12 +25,12 @@ class DecisionNode {
 
   // Train this node to decide on the dataset rows between start and end.
   void train(SDIter first, SDIter last) {
-    // The prediction at this node is the most occuring label in the incoming
+    // The prediction at this node is the most occurring label in the incoming
     // samples.
     prediction_ = mode_label(first, last);
 
-    // If the dataset only contains one label, then there is no point in
-    // training this node, we can predict early.
+    // If the dataset only contains one label, then make it a leaf decider
+    // node.
     if (single_label(first, last)) {
       make_leaf();
     }
@@ -71,7 +70,7 @@ class DecisionNode {
     }
   }
 
-  // Determine the direction of the split based on the feautres.
+  // Determine the direction of the split based on the features.
   SplitDirection split_direction(const std::vector<double>& features) const {
     return splitter_.apply(features);
   }
@@ -80,9 +79,7 @@ class DecisionNode {
   // samples.
   double predict() const { return prediction_; }
 
-  // Initialize the mahalanobis distance calculator.  Picks two random features
-  // and then calcuates the distribution of those features for the dominant
-  // label at this node.
+  // Initialize the mahalanobis distance calculator.
   void initialize_mahalanobis(SDIter first, SDIter last) {
     distro_project_ = splitter_.get_features();
 

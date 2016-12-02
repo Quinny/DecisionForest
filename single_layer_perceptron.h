@@ -15,6 +15,7 @@ namespace rf {
 
 namespace {
 
+// Peceptron delta rule.
 double weight_update(const double& feature, const double error,
                      const double learning_rate, const double current_weight) {
   return current_weight + (learning_rate * error * feature);
@@ -25,6 +26,7 @@ using Matrix = std::vector<std::vector<T>>;
 
 }  // namespace
 
+// A single layer perceptron with a configurable activation function.
 template <typename ActivationFn>
 class SingleLayerPerceptron {
  public:
@@ -54,6 +56,7 @@ class SingleLayerPerceptron {
                     std::bind(random_real_range<double>, -1, 1));
   }
 
+  // Given a set of features, return the activation values of the output layers.
   std::vector<double> predict(const std::vector<double>& features) const {
     std::vector<double> output(n_outputs_);
     for (auto i = 0ul; i < n_outputs_; ++i) {
@@ -64,6 +67,7 @@ class SingleLayerPerceptron {
     return output;
   }
 
+  // Learn a training example and update the weights and biases accordingly.
   void learn(const std::vector<double>& features,
              const std::vector<double>& true_output) {
     const auto actual_output = predict(features);
