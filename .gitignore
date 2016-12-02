@@ -4,3 +4,4 @@
 *.csv
 *.o
 .ycm_*
+bin/
