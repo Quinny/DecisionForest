@@ -23,11 +23,12 @@ class DecisionForest {
   // will be trained a bagged subset of the data of size
   // |training data| * bag_percentage.
   DecisionForest(std::size_t n_trees, std::size_t max_depth,
-                 double bag_percentage, qp::threading::Threadpool* thread_pool)
+                 double bag_percentage, qp::threading::Threadpool* thread_pool,
+                 TreeType tree_type = TreeType::SINGLE_FOREST)
       : bag_percentage_(bag_percentage), thread_pool_(thread_pool) {
     trees_.reserve(n_trees);
     for (unsigned i = 0; i < n_trees; ++i) {
-      trees_.emplace_back(max_depth);
+      trees_.emplace_back(max_depth, tree_type);
     }
   }
 

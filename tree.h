@@ -9,12 +9,18 @@
 namespace qp {
 namespace rf {
 
+// Enum denoting if the tree belongs to a single forest or a deep forest.
+// In the event the tree belongs to a single forest, the mahalanobis distances
+// do not need to calculated.
+enum class TreeType { SINGLE_FOREST, DEEP_FOREST };
+
 // A complete tree of DecisionNodes.
 template <typename SplitterFn>
 class DecisionTree {
  public:
   // Create a DecisionTree with a given depth.
-  DecisionTree(int max_depth) : max_depth_(max_depth) {}
+  DecisionTree(int max_depth, TreeType type = TreeType::SINGLE_FOREST)
+      : max_depth_(max_depth), type_(type) {}
 
   // Walks the tree based on the feature vector and returns the leaf node.
   const DecisionNode<SplitterFn>* walk(
@@ -47,7 +53,10 @@ class DecisionTree {
                      SDIter last, int current_depth) {
     // Train the current node.
     current->train(first, last);
-    current->initialize_mahalanobis(first, last);
+
+    if (type_ == TreeType::DEEP_FOREST) {
+      current->initialize_mahalanobis(first, last);
+    }
 
     // The the node is a leaf then initialize the mahalanobis distance
     // calculator for feature transformation.
@@ -79,6 +88,7 @@ class DecisionTree {
  private:
   std::unique_ptr<DecisionNode<SplitterFn>> root_;
   int max_depth_;
+  TreeType type_;
 };
 
 }  // namespace rf
