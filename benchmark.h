@@ -35,9 +35,9 @@ struct BenchmarkInfo {
 
 // Make everything look pretty.
 std::ostream& operator<<(std::ostream& os, const BenchmarkInfo& info) {
-  os << "training time:\t" << info.training_time << std::endl
-     << "evaluation time:\t" << info.evaluation_time << std::endl
-     << "accuracy:\t" << info.accuracy << std::endl
+  os << "training time:   " << info.training_time << std::endl
+     << "evaluation time: " << info.evaluation_time << std::endl
+     << "accuracy:        " << info.accuracy << std::endl
      << "confusion matrix:" << std::endl;
 
   for (const auto& row : info.confusion_matrix) {
