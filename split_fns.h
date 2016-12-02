@@ -178,18 +178,13 @@ class HighestAverageSigmoidActivation {
 
     const auto max = std::max_element(average_activations.begin(),
                                       average_activations.end());
-    for (auto i = 0ul; i < average_activations.size(); ++i) {
-      if (average_activations[i] == *max) {
-        maximum_activation_neuron = i;
-        break;
-      }
-    }
+    maximum_activation_neuron_ = max - average_activations.begin();
   }
 
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {
     const auto projected = project(features, projection_);
     const auto output = layer_->predict(projected);
-    return output[maximum_activation_neuron] >= 0.5
+    return output[maximum_activation_neuron_] >= 0.5
                ? qp::rf::SplitDirection::LEFT
                : qp::rf::SplitDirection::RIGHT;
   }
@@ -200,7 +195,7 @@ class HighestAverageSigmoidActivation {
 
  private:
   std::unique_ptr<SingleLayerPerceptron<SigmoidActivation>> layer_;
-  std::size_t maximum_activation_neuron;
+  std::size_t maximum_activation_neuron_;
   mutable std::vector<FeatureIndex> projection_;
 };
 
