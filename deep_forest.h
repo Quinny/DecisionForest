@@ -24,13 +24,7 @@ struct LayerConfig {
 // A deep forest consists of layers of decision forests.  Each layer passes
 // a transformed feature vector to the next.  The transformed feature vector
 // consists of the mahalanobis distance from the given feature set to the
-// distribution at each leaf node.
-//
-// TODO the template parameter "Hack" represents the splitter function for the
-// hidden layers.  This is needed because the provided splitter function
-// currently only works for the input layer.  This could be fixed with a simple
-// type trait that subs in a different feature type to a given split function.
-// More thought needs to be put into this...
+// mode label feature distribution at each leaf node.
 template <typename SplitterFn>
 class DeepForest {
  public:
@@ -66,6 +60,7 @@ class DeepForest {
     output_layer_.train(transformed);
   }
 
+  // Predict the label of a given feature set.
   double predict(const std::vector<double>& features) {
     auto transformed = input_layer_.transform(features);
     for (const auto& layer : hidden_layers_) {

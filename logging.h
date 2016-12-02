@@ -1,9 +1,9 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
+#include <cstring>
 #include <ctime>
 #include <iostream>
-#include <cstring>
 
 namespace qp {
 namespace logging {
