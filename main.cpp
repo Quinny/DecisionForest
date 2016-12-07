@@ -1,11 +1,13 @@
 #include <fstream>
 #include <iostream>
 
+#include "benchmark.h"
 #include "csv.h"
 #include "deep_forest.h"
 #include "forest.h"
 #include "logging.h"
 #include "split_fns.h"
+#include "threadpool.h"
 
 // TODO command line arguments.
 int main() {
@@ -19,38 +21,24 @@ int main() {
     return 1;
   }
 
-  qp::LOG << "reading data..." << std::endl;
-  auto training =
-      qp::rf::read_csv_data_set<int, int>(training_stream, 50000, 784);
-  auto testing =
-      qp::rf::read_csv_data_set<int, int>(testing_stream, 10000, 784);
+  qp::LOG << "reading data" << std::endl;
+  auto training = qp::rf::read_csv_data_set(training_stream, 50000, 784);
+  auto testing = qp::rf::read_csv_data_set(testing_stream, 10000, 784);
 
-  qp::rf::zero_center_mean(training);
-  qp::rf::zero_center_mean(testing);
+  const auto means = qp::rf::zero_center_mean(training);
+  qp::rf::zero_center_mean(testing, means);
 
-  qp::rf::LayerConfig input{200, 5};
-  std::vector<qp::rf::LayerConfig> hidden{};
-  qp::rf::LayerConfig output{200, 15};
+  qp::LOG << "starting threadpool" << std::endl;
+#ifndef N_WORKERS
+  qp::threading::Threadpool thread_pool;
+#else
+  qp::threading::Threadpool thread_pool(N_WORKERS);
+#endif
 
-  /*  qp::rf::DeepForest<int, int, qp::rf::PerceptronSplit<int, int, 2, 1>,
-                       qp::rf::PerceptronSplit<double, int, 2, 5>>
-        forest(input, hidden, output);
-  */
-  qp::rf::DecisionForest<int, int,
-                         qp::rf::ModeVsAllPerceptronSplit<int, int, 2>>
-      forest(10, 10);
+  qp::rf::DecisionForest<qp::rf::RandomUnivariateSplit> forest(10, -1, 1.0,
+                                                               &thread_pool);
 
-  qp::LOG << "training..." << std::endl;
-  forest.train(training);
-
-  qp::LOG << "predicting..." << std::endl;
-  int correctly_classified = 0;
-  for (unsigned i = 0; i < testing.size(); ++i) {
-    if (forest.predict(testing[i].features) == testing[i].label) {
-      ++correctly_classified;
-    }
-  }
-
-  std::cout << (correctly_classified / static_cast<double>(testing.size()))
-            << std::endl;
+  qp::LOG << "evaluating classifier" << std::endl;
+  const auto results = qp::benchmark(forest, training, testing, 10);
+  std::cout << results << std::endl;
 }
