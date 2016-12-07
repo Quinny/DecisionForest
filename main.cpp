@@ -9,7 +9,6 @@
 #include "split_fns.h"
 #include "threadpool.h"
 
-// TODO command line arguments.
 int main() {
   std::ios_base::sync_with_stdio(false);
 

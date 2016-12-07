@@ -21,7 +21,8 @@ class DecisionForest {
  public:
   // Grow a forest of size |n_trees|, each of depth |max_depth|.  Each tree
   // will be trained a bagged subset of the data of size
-  // |training data| * bag_percentage.
+  // |training data| * bag_percentage.  Passing -1 as a the max_depth will
+  // cause the tree to be fully grown.
   DecisionForest(std::size_t n_trees, std::size_t max_depth,
                  double bag_percentage, qp::threading::Threadpool* thread_pool,
                  TreeType tree_type = TreeType::SINGLE_FOREST)
