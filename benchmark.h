@@ -52,12 +52,20 @@ std::ostream& operator<<(std::ostream& os, const BenchmarkInfo& info) {
 template <typename Classifier>
 BenchmarkInfo benchmark(Classifier& classifier,
                         const rf::DataSet& training_data,
-                        const rf::DataSet& testing_data, const int n_labels) {
+                        const rf::DataSet& testing_data) {
   BenchmarkInfo ret;
   ret.training_time = time_op([&]() { classifier.train(training_data); });
   ret.evaluation_time = 0;
-  std::vector<std::vector<int>> confusion_matrix(n_labels,
-                                                 std::vector<int>(n_labels, 0));
+
+  const auto max_label =
+      std::max_element(training_data.begin(), training_data.end(),
+                       [](const auto& lhs, const auto& rhs) {
+                         return lhs.label < rhs.label;
+                       })
+          ->label;
+
+  std::vector<std::vector<int>> confusion_matrix(
+      max_label + 1, std::vector<int>(max_label + 1, 0));
   int correctly_classified = 0;
 
   for (const auto& example : testing_data) {
