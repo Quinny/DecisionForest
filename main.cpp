@@ -21,7 +21,7 @@ int main() {
   }
 
   qp::LOG << "reading data" << std::endl;
-  auto training = qp::rf::read_csv_data_set(training_stream, 50000, 784);
+  auto training = qp::rf::read_csv_data_set(training_stream, 60000, 784);
   auto testing = qp::rf::read_csv_data_set(testing_stream, 10000, 784);
 
   const auto means = qp::rf::zero_center_mean(training);
@@ -38,6 +38,6 @@ int main() {
                                                                &thread_pool);
 
   qp::LOG << "evaluating classifier" << std::endl;
-  const auto results = qp::benchmark(forest, training, testing, 10);
+  const auto results = qp::benchmark(forest, training, testing);
   std::cout << results << std::endl;
 }
