@@ -11,22 +11,16 @@ namespace qp {
 namespace rf {
 
 // A collection of decision trees which each cast a vote towards the final
-// classificaiton of a sample.  Each tree is trained on a bagged (Bootstrap
-// aggregated) sample of the original data set. Tree training is done on the
-// provided threadpool.
-//
-// https://en.wikipedia.org/wiki/Bootstrap_aggregating
+// classificaiton of a sample. Tree training is done on the provided threadpool.
 template <typename SpiltterFn>
 class DecisionForest {
  public:
-  // Grow a forest of size |n_trees|, each of depth |max_depth|.  Each tree
-  // will be trained a bagged subset of the data of size
-  // |training data| * bag_percentage.  Passing -1 as a the max_depth will
-  // cause the tree to be fully grown.
+  // Grow a forest of size |n_trees|, each of depth |max_depth|. Passing -1 as a
+  // the max_depth will cause the tree to be fully grown.
   DecisionForest(std::size_t n_trees, std::size_t max_depth,
-                 double bag_percentage, qp::threading::Threadpool* thread_pool,
+                 qp::threading::Threadpool* thread_pool,
                  TreeType tree_type = TreeType::SINGLE_FOREST)
-      : bag_percentage_(bag_percentage), thread_pool_(thread_pool) {
+      : thread_pool_(thread_pool) {
     trees_.reserve(n_trees);
     for (unsigned i = 0; i < n_trees; ++i) {
       trees_.emplace_back(max_depth, tree_type);
@@ -95,7 +89,6 @@ class DecisionForest {
 
  private:
   std::vector<DecisionTree<SpiltterFn>> trees_;
-  double bag_percentage_;
   qp::threading::Threadpool* thread_pool_;
 };
 

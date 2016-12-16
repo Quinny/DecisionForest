@@ -34,7 +34,7 @@ int main() {
   qp::threading::Threadpool thread_pool(N_WORKERS);
 #endif
 
-  qp::rf::DecisionForest<qp::rf::RandomUnivariateSplit> forest(10, -1, 1.0,
+  qp::rf::DecisionForest<qp::rf::RandomUnivariateSplit> forest(10, -1,
                                                                &thread_pool);
 
   qp::LOG << "evaluating classifier" << std::endl;

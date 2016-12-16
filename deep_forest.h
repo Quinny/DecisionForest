@@ -34,15 +34,15 @@ class DeepForest {
              LayerConfig output_layer_config, double bag_percentage,
              qp::threading::Threadpool* thread_pool)
       : input_layer_(input_layer_config.trees, input_layer_config.depth,
-                     bag_percentage, thread_pool, TreeType::DEEP_FOREST),
+                     thread_pool, TreeType::DEEP_FOREST),
         // The output layer can act as a single forest, as it performs no
         // transformations.
         output_layer_(output_layer_config.trees, output_layer_config.depth,
-                      bag_percentage, thread_pool, TreeType::SINGLE_FOREST) {
+                      thread_pool, TreeType::SINGLE_FOREST) {
     hidden_layers_.reserve(hidden_layer_configs.size());
     for (const auto& config : hidden_layer_configs) {
-      hidden_layers_.emplace_back(config.trees, config.depth, bag_percentage,
-                                  thread_pool, TreeType::DEEP_FOREST);
+      hidden_layers_.emplace_back(config.trees, config.depth, thread_pool,
+                                  TreeType::DEEP_FOREST);
     }
   }
 
