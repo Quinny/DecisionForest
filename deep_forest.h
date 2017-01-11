@@ -1,6 +1,7 @@
 #ifndef DEEP_FOREST_H
 #define DEEP_FOREST_H
 
+#include "clustering.h"
 #include "dataset.h"
 #include "forest.h"
 #include "logging.h"
@@ -31,7 +32,7 @@ class DeepForest {
   // Construct the forest based on the layer configurations.
   DeepForest(LayerConfig input_layer_config,
              const std::vector<LayerConfig>& hidden_layer_configs,
-             LayerConfig output_layer_config, double bag_percentage,
+             LayerConfig output_layer_config,
              qp::threading::Threadpool* thread_pool)
       : input_layer_(input_layer_config.trees, input_layer_config.depth,
                      thread_pool, TreeType::DEEP_FOREST),
@@ -50,12 +51,20 @@ class DeepForest {
   void train(const DataSet& data_set) {
     LOG << "training input layer" << std::endl;
     input_layer_.train(data_set);
+    LOG << "transforming input layer" << std::endl;
     auto transformed = input_layer_.transform(data_set);
+    LOG << "reducing input layer" << std::endl;
+    reducers_.emplace_back();
+    reducers_.back().fit_transform(transformed);
+
     for (auto& layer : hidden_layers_) {
       LOG << "training hidden layer" << std::endl;
       layer.train(transformed);
       LOG << "transforming data set" << std::endl;
       transformed = layer.transform(transformed);
+      LOG << "clustering and reducing" << std::endl;
+      reducers_.emplace_back();
+      reducers_.back().fit_transform(transformed);
     }
 
     LOG << "training output layer" << std::endl;
@@ -65,13 +74,20 @@ class DeepForest {
   // Predict the label of a given feature set.
   double predict(const std::vector<double>& features) {
     auto transformed = input_layer_.transform(features);
-    for (const auto& layer : hidden_layers_) {
-      transformed = layer.transform(transformed);
+    transformed = reducers_[0].transform(features);
+
+    for (unsigned i = 0; i < hidden_layers_.size(); ++i) {
+      transformed = hidden_layers_[i].transform(transformed);
+      transformed = reducers_[i + 1].transform(transformed);
     }
+    // for (const auto& layer : hidden_layers_) {
+    // transformed = layer.transform(transformed);
+    //}
     return output_layer_.predict(transformed);
   }
 
  private:
+  std::vector<FeatureColumnKMeans<100, 5>> reducers_;
   DecisionForest<SplitterFn> input_layer_;
   std::vector<DecisionForest<SplitterFn>> hidden_layers_;
   DecisionForest<SplitterFn> output_layer_;

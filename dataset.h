@@ -76,8 +76,7 @@ SampledDataSet sample_with_replacement(const DataSet& data_set, std::size_t n) {
   return sample;
 }
 
-// For testing only.  Creates a sampled dataset that contains exactly the
-// elements of the source.
+// Creates a sampled dataset that contains exactly the elements of the source.
 SampledDataSet sample_exactly(const DataSet& dataset) {
   SampledDataSet sample;
   for (const auto& example : dataset) {
