@@ -1,10 +1,10 @@
 #ifndef DEEP_FOREST_H
 #define DEEP_FOREST_H
 
-#include "clustering.h"
 #include "dataset.h"
 #include "forest.h"
 #include "logging.h"
+#include "reducers.h"
 
 namespace qp {
 namespace rf {
@@ -30,9 +30,9 @@ template <typename SplitterFn>
 class DeepForest {
  public:
   // Construct the forest based on the layer configurations.
-  DeepForest(LayerConfig input_layer_config,
+  DeepForest(const LayerConfig& input_layer_config,
              const std::vector<LayerConfig>& hidden_layer_configs,
-             LayerConfig output_layer_config,
+             const LayerConfig& output_layer_config,
              qp::threading::Threadpool* thread_pool)
       : input_layer_(input_layer_config.trees, input_layer_config.depth,
                      thread_pool, TreeType::DEEP_FOREST),
@@ -87,7 +87,7 @@ class DeepForest {
   }
 
  private:
-  std::vector<FeatureColumnKMeans<100, 5>> reducers_;
+  std::vector<FeatureColumnHierarchicalKMeans<784, 100>> reducers_;
   DecisionForest<SplitterFn> input_layer_;
   std::vector<DecisionForest<SplitterFn>> hidden_layers_;
   DecisionForest<SplitterFn> output_layer_;
