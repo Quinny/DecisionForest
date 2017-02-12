@@ -12,9 +12,15 @@
 namespace qp {
 namespace rf {
 
+// Performs Hierarchical k-means clustering on the feature columns of a
+// dataset to determine which features are redundant.  The optimal number of
+// clusters between 1 to min(MaxClusters, |features|) will be selected.
+// Once the features have been clustered, a single feature from each cluster
+// is randomly selected and this new set of features will act as the projection.
 template <int MaxClusters, int Iterations>
 class FeatureColumnHierarchicalKMeans {
  public:
+  // Fit the feature reducer to the data.
   void fit(const DataSet& data_set) {
     // Copy the data into a opencv matrix to make use of their functions.
     cv::Mat data(data_set.size(), data_set.front().features.size(), CV_32F);
@@ -42,7 +48,7 @@ class FeatureColumnHierarchicalKMeans {
     centers = centers.rowRange(cv::Range(0, optimal_clusters));
     projection_.resize(optimal_clusters);
 
-    qp::LOG << "optimal clusters: " << optimal_clusters << std::endl;
+    qp::LOG << "# of optimal clusters: " << optimal_clusters << std::endl;
 
     // Perform kmeans clustering on the transpose (i.e. cluster on feature
     // columns) of the matrix.
@@ -74,6 +80,8 @@ class FeatureColumnHierarchicalKMeans {
     }
   }
 
+  // Transform the dataset by removing redundant features.  That is, keeping
+  // only those selected from the clusters.
   void transform(DataSet& data_set) {
     for (auto& row : data_set) {
       row.features = project(row.features, projection_);

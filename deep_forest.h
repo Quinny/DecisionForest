@@ -6,12 +6,20 @@
 #include "logging.h"
 #include "reducers.h"
 
+/*
+ * A DeepForest is analogous to a deep network, where the layers of the
+ * network are random forests.
+ */
+
 namespace qp {
 namespace rf {
 
 // A configuration for a layer of a deep forest.
 struct LayerConfig {
+  // The number of trees in the layer.
   std::size_t trees;
+
+  // The depth limit of the layer.
   int depth;
 
   // For convenience sake. Allows for things like:
@@ -80,9 +88,6 @@ class DeepForest {
       transformed = hidden_layers_[i].transform(transformed);
       transformed = reducers_[i + 1].transform(transformed);
     }
-    // for (const auto& layer : hidden_layers_) {
-    // transformed = layer.transform(transformed);
-    //}
     return output_layer_.predict(transformed);
   }
 

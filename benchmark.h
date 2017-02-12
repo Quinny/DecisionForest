@@ -7,13 +7,16 @@
 #include <iostream>
 #include <vector>
 
-// Tools for benchmarking classifiers.
+/*
+ * This file contains utility functions for benchmarking performance and
+ * accuracy of classifiers
+ */
 
 namespace qp {
 
 namespace {
 
-// Return how long it takes for a given function to run in seconds.
+// Runs the function f and returns the execution time in seconds.
 template <typename F>
 double time_op(F&& f) {
   const auto t1 = std::chrono::high_resolution_clock::now();
@@ -25,15 +28,21 @@ double time_op(F&& f) {
 
 }  // namespace
 
-// All times are reported in seconds.
+// A struct for storing classifier benchmarks.  All times are stored in
+// seconds.
 struct BenchmarkInfo {
+  // Total time taken to train the model.
   double training_time;
+  // Total time taken to evaluate the test set.
   double evaluation_time;
+  // Number of correctly classified instances / total number of instances.
   double accuracy;
+  // m[i][j] = the number of instances of class i, which were predicted to be
+  // class j.
   std::vector<std::vector<int>> confusion_matrix;
 };
 
-// Make everything look pretty.
+// Pretty print the benchmark info.
 std::ostream& operator<<(std::ostream& os, const BenchmarkInfo& info) {
   os << "training time:   " << info.training_time << std::endl
      << "evaluation time: " << info.evaluation_time << std::endl
@@ -49,6 +58,8 @@ std::ostream& operator<<(std::ostream& os, const BenchmarkInfo& info) {
   return os;
 }
 
+// Run the benchmarks and return the info struct.  The classifer type should
+// define train, and predict methods.
 template <typename Classifier>
 BenchmarkInfo benchmark(Classifier& classifier,
                         const rf::DataSet& training_data,

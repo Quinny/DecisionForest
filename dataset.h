@@ -10,11 +10,15 @@
 #include "random.h"
 #include "vector_util.h"
 
+/* Defines types and operations related to Datasets.  A Dataset is defined as a
+ * collection of Examples.  An example is simply a list of a features and
+ * a label.
+ */
+
 namespace qp {
 namespace rf {
 
-// An example to be provided to a random forest.  Defined by a set of features
-// and a label.
+// A training example defined by a set of features and a label.
 struct Example {
   std::vector<double> features;
   double label;
@@ -27,7 +31,7 @@ using SampledExample = std::reference_wrapper<const Example>;
 using FeatureIndex = std::size_t;
 
 // A comparator which compares the i'th feature of two training examples using
-// Cmp.
+// Cmp.  Overloaded to work with sampled or unsampled datasets.
 template <typename Cmp = std::less<double>>
 class CompareOnFeature {
  public:
@@ -49,7 +53,7 @@ class CompareOnFeature {
 // A dataset is a collection of training examples.
 using DataSet = std::vector<Example>;
 
-// A sampled dataset.  Again, fast copying.
+// A sampled dataset. Defined for fast copying.
 using SampledDataSet = std::vector<SampledExample>;
 
 using SDIter = SampledDataSet::iterator;
@@ -79,13 +83,14 @@ SampledDataSet sample_with_replacement(const DataSet& data_set, std::size_t n) {
 // Creates a sampled dataset that contains exactly the elements of the source.
 SampledDataSet sample_exactly(const DataSet& dataset) {
   SampledDataSet sample;
+  sample.reserve(dataset.size());
   for (const auto& example : dataset) {
     sample.push_back(example);
   }
   return sample;
 }
 
-// Find the most commonly occurring label in the dataset.
+// Finds the most commonly occurring label in the dataset.
 double mode_label(SDIter start, SDIter end) {
   LabelHistogram histogram;
   while (start != end) {

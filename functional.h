@@ -7,9 +7,14 @@
 #include <utility>
 #include <vector>
 
+/*
+ * This file is pretty overkill, but i thought it was neat.
+ */
+
 namespace qp {
 namespace rf {
 
+// An implementation of the On combinator.  Returns F(Arg(x), Arg(y)).
 template <typename Arg, typename Comb, typename F>
 class On {
  public:
@@ -26,6 +31,7 @@ class On {
   Comb c;
 };
 
+// Gets the second item from a pair.
 template <typename T, typename U>
 struct Snd {
   const U& operator()(const std::pair<T, U>& p) const { return p.second; }

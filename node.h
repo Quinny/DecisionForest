@@ -17,7 +17,7 @@ namespace rf {
 
 enum class SplitDirection { LEFT, RIGHT };
 
-// Represents a single node in a tree.
+// Represents a single node in a decision tree.
 template <typename SplitterFn>
 class DecisionNode {
  public:
@@ -47,6 +47,8 @@ class DecisionNode {
       SplitterFn candidate_split;
       candidate_split.train(first, last);
 
+      // Generate histograms for the number of instances from each class which
+      // split left or right.
       LabelHistogram went_left, went_right;
       for (auto sample = first; sample != last; ++sample) {
         if (candidate_split.apply(sample->get().features) ==
@@ -57,6 +59,8 @@ class DecisionNode {
         }
       }
 
+      // Calculate the total impurity as a weighted average of the left and
+      // right impurities.
       auto left_impurity = gini_impurity(went_left);
       auto right_impurity = gini_impurity(went_right);
       auto total_impurity =
@@ -83,6 +87,7 @@ class DecisionNode {
   void initialize_mahalanobis(SDIter first, SDIter last) {
     distro_project_ = splitter_.get_features();
 
+    // Determine how many samples have the mode label.
     std::size_t distro_size = 0;
     for (auto i = first; i != last; ++i) {
       if (i->get().label == prediction_) {
@@ -93,6 +98,7 @@ class DecisionNode {
     cv::Mat distribution(distro_size, distro_project_.size(), CV_64F);
     std::size_t c = 0;
 
+    // Create the distribution.
     for (auto i = first; i != last; ++i) {
       if (i->get().label == prediction_) {
         for (int j = 0; j < distro_project_.size(); ++j) {
@@ -123,6 +129,8 @@ class DecisionNode {
     right_.reset();
   }
 
+  // Allocate the child for the split direction and return a pointer to it.
+  // If the child already exists, it will be overwritten.
   DecisionNode<SplitterFn>* make_child(SplitDirection dir) {
     if (dir == SplitDirection::LEFT) {
       left_.reset(new DecisionNode<SplitterFn>());
@@ -133,6 +141,8 @@ class DecisionNode {
     }
   }
 
+  // Get the child at the split direction.  Will return nullptr if the child
+  // has not been allocated.
   const DecisionNode<SplitterFn>* get_child(SplitDirection dir) const {
     return dir == SplitDirection::LEFT ? left_.get() : right_.get();
   }

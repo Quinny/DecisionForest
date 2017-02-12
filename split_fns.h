@@ -6,6 +6,11 @@
 #include "random.h"
 #include "single_layer_perceptron.h"
 
+/*
+ * A collection of split functions to use as weak learners inside of decision
+ * trees.
+ */
+
 namespace qp {
 namespace rf {
 
@@ -18,6 +23,8 @@ class SplitFunction {
   virtual std::size_t n_input_features() const = 0;
 };
 
+// Typical random univariate split, choose a feature and a random threshold
+// and split on that.
 class RandomUnivariateSplit {
  public:
   void train(SDIter first, SDIter last) {
@@ -49,49 +56,43 @@ class RandomUnivariateSplit {
   double threshold_;
 };
 
+// Splits based on the sign of the dot product of a projection of the provided
+// feature vector and a random N dimensional line.
 template <int N>
 class RandomMultivariateSplit {
  public:
+  // An untrained single layer step activated perceptron is used as the
+  // random line.
+  RandomMultivariateSplit() : line_(N, 1, 0) {}
+
   void train(SDIter first, SDIter last) {
+    (void)last;
+
     const auto total_features = first->get().features.size();
-    generate_back_n(feature_indicies_, N, [&]() {
+    generate_back_n(feature_indices_, N, [&]() {
       return random_range<FeatureIndex>(0, total_features - 1);
     });
-
-    thresholds_.resize(N);
-    std::transform(feature_indicies_.begin(), feature_indicies_.end(),
-                   thresholds_.begin(), [&](const FeatureIndex i) {
-                     const auto feature_range = std::minmax_element(
-                         first, last, qp::rf::CompareOnFeature<>(i));
-                     const auto low = feature_range.first->get().features[i];
-                     const auto high = feature_range.second->get().features[i];
-                     const auto threshold =
-                         qp::rf::random_real_range<double>(low, high);
-                     return threshold;
-
-                   });
   }
 
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {
-    for (unsigned i = 0; i < feature_indicies_.size(); ++i) {
-      if (features[feature_indicies_[i]] < thresholds_[i]) {
-        return qp::rf::SplitDirection::LEFT;
-      }
-    }
-    return qp::rf::SplitDirection::RIGHT;
+    return line_.predict(project(features, feature_indices_)).front() == 1
+               ? qp::rf::SplitDirection::LEFT
+               : qp::rf::SplitDirection::RIGHT;
   }
 
   const std::vector<FeatureIndex>& get_features() const {
-    return feature_indicies_;
+    return feature_indices_;
   }
 
   std::size_t n_input_features() const { return N; }
 
  private:
-  std::vector<FeatureIndex> feature_indicies_;
-  std::vector<double> thresholds_;
+  std::vector<FeatureIndex> feature_indices_;
+  SingleLayerPerceptron<StepActivation> line_;
 };
 
+// Trains a perceptron in a mode-vs-all fashion, and splits based on the
+// predicted outcome.
 template <int N>
 class ModeVsAllPerceptronSplit {
  public:
@@ -129,6 +130,9 @@ class ModeVsAllPerceptronSplit {
   std::vector<FeatureIndex> projection_;
 };
 
+// Trains a perceptron in a one-vs-one manner, and then determines which class
+// produces the highest average sigmoid activation value.  The activation of
+// that class is then used as the split criteria.
 template <int N>
 class HighestAverageSigmoidActivation {
  public:

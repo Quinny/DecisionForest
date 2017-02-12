@@ -5,14 +5,21 @@
 #include <ctime>
 #include <iostream>
 
+/*
+ * Logging helpers.
+ */
+
 namespace qp {
 namespace logging {
 
-bool enabled = false;
+bool enabled = true;
 
+// Write the current datetime followed by the user input to stdout.
 struct LogStream {
   template <typename T>
   std::ostream& operator<<(const T& x) {
+    if (!enabled) return std::cout;
+
     const auto tm = std::time(nullptr);
     const auto* curtime = localtime(&tm);
     auto* time_str = asctime(curtime);
@@ -24,6 +31,7 @@ struct LogStream {
 
 }  // namespace logging
 
+// Default logging stream to be used.
 logging::LogStream LOG;
 
 }  // namespace qp

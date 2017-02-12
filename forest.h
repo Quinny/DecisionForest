@@ -11,12 +11,15 @@ namespace qp {
 namespace rf {
 
 // A collection of decision trees which each cast a vote towards the final
-// classificaiton of a sample. Tree training is done on the provided threadpool.
+// classification of a sample. Tree training is done on the provided thread
+// pool.
 template <typename SpiltterFn>
 class DecisionForest {
  public:
   // Grow a forest of size |n_trees|, each of depth |max_depth|. Passing -1 as a
-  // the max_depth will cause the tree to be fully grown.
+  // the max_depth will cause the tree to be fully grown.  TreeType defines
+  // whether the forest will be used in a deep forest or not (deep forest's
+  // perform extra computations not needed within single forests).
   DecisionForest(std::size_t n_trees, std::size_t max_depth,
                  qp::threading::Threadpool* thread_pool,
                  TreeType tree_type = TreeType::SINGLE_FOREST)
@@ -27,7 +30,8 @@ class DecisionForest {
     }
   }
 
-  // Train each tree in parallel on a bagged sample of the dataset.
+  // Trains each tree in the forest on the provided dataset.  Tree training is
+  // done in parallel on the provided thread pool.
   void train(const DataSet& data_set) {
     std::vector<std::future<void>> futures;
     futures.reserve(trees_.size());
