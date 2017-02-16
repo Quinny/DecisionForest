@@ -34,8 +34,12 @@ int main() {
   qp::threading::Threadpool thread_pool(N_WORKERS);
 #endif
 
-  qp::rf::DecisionForest<qp::rf::RandomUnivariateSplit> forest(10, -1,
-                                                               &thread_pool);
+  qp::rf::DeepForest<qp::rf::HighestAverageSigmoidActivation<2>> forest(
+      qp::rf::LayerConfig{200, 3}, {}, qp::rf::LayerConfig{200, 15},
+      &thread_pool);
+
+  // qp::rf::DecisionForest<qp::rf::RandomUnivariateSplit> forest(10, -1,
+  //                                                             &thread_pool);
 
   qp::LOG << "evaluating classifier" << std::endl;
   const auto results = qp::benchmark(forest, training, testing);

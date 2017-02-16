@@ -193,6 +193,11 @@ class HighestAverageSigmoidActivation {
                : qp::rf::SplitDirection::RIGHT;
   }
 
+  double activate(const std::vector<double>& features) const {
+    return layer_->predict(
+        project(features, projection_))[maximum_activation_neuron_];
+  }
+
   const std::vector<FeatureIndex>& get_features() const { return projection_; }
 
   std::size_t n_input_features() const { return N; }
@@ -200,7 +205,7 @@ class HighestAverageSigmoidActivation {
  private:
   std::unique_ptr<SingleLayerPerceptron<SigmoidActivation>> layer_;
   std::size_t maximum_activation_neuron_;
-  mutable std::vector<FeatureIndex> projection_;
+  std::vector<FeatureIndex> projection_;
 };
 
 }  // namespace rf

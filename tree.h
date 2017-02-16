@@ -85,6 +85,21 @@ class DecisionTree {
     }
   }
 
+  // Transform features based on a summation of activations.
+  double transform_summation(const std::vector<double>& features) const {
+    double sum = 0;
+    const auto* current = root_.get();
+    // Start at the root node and walk down the tree until we reach a leaf.
+    while (!current->leaf()) {
+      sum += current->activation(features);
+      const auto dir = current->split_direction(features);
+      const auto* next = current->get_child(dir);
+      if (next == nullptr) break;
+      current = next;
+    }
+    return sum;
+  }
+
  private:
   std::unique_ptr<DecisionNode<SplitterFn>> root_;
   int max_depth_;

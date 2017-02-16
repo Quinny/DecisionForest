@@ -147,6 +147,10 @@ class DecisionNode {
     return dir == SplitDirection::LEFT ? left_.get() : right_.get();
   }
 
+  double activation(const std::vector<double>& features) const {
+    return splitter_.activate(features);
+  }
+
  private:
   MahalanobisCalculator mc_;
   std::vector<FeatureIndex> distro_project_;
