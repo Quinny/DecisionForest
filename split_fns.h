@@ -1,6 +1,8 @@
 #ifndef SPLIT_FNS_H
 #define SPLIT_FNS_H
 
+#include <experimental/optional>
+
 #include "dataset.h"
 #include "node.h"
 #include "random.h"
@@ -206,6 +208,58 @@ class HighestAverageSigmoidActivation {
   std::unique_ptr<SingleLayerPerceptron<SigmoidActivation>> layer_;
   std::size_t maximum_activation_neuron_;
   std::vector<FeatureIndex> projection_;
+};
+
+// Chooses a random split function from all of the above.
+template <int N>
+class RandomSplitFunction {
+ public:
+  template <typename T>
+  using Maybe = std::experimental::optional<T>;
+
+  void train(SDIter first, SDIter last) {
+    const int random = random_range(0, 3);
+    if (random == 0) {
+      split_fn_1 = RandomUnivariateSplit();
+    } else if (random == 1) {
+      split_fn_2 = RandomMultivariateSplit<N>();
+    } else if (random == 2) {
+      split_fn_3 = ModeVsAllPerceptronSplit<N>();
+    } else {
+      split_fn_4 = HighestAverageSigmoidActivation<N>();
+    }
+
+    if (split_fn_1) split_fn_1->train(first, last);
+    if (split_fn_2) split_fn_2->train(first, last);
+    if (split_fn_3) split_fn_3->train(first, last);
+    if (split_fn_4) split_fn_4->train(first, last);
+  }
+
+  qp::rf::SplitDirection apply(const std::vector<double>& features) const {
+    if (split_fn_1) return split_fn_1->apply(features);
+    if (split_fn_2) return split_fn_2->apply(features);
+    if (split_fn_3) return split_fn_3->apply(features);
+    if (split_fn_4) return split_fn_4->apply(features);
+  }
+
+  const std::vector<FeatureIndex> get_features() const {
+    if (split_fn_1) return split_fn_1->get_features();
+    if (split_fn_2) return split_fn_2->get_features();
+    if (split_fn_3) return split_fn_3->get_features();
+    if (split_fn_4) return split_fn_4->get_features();
+  }
+
+  std::size_t n_input_features() const {
+    if (split_fn_1) return 1;
+    return N;
+  }
+
+ private:
+  // TODO: once std::variant becomes standardized used that.
+  Maybe<RandomUnivariateSplit> split_fn_1;
+  Maybe<RandomMultivariateSplit<N>> split_fn_2;
+  Maybe<ModeVsAllPerceptronSplit<N>> split_fn_3;
+  Maybe<HighestAverageSigmoidActivation<N>> split_fn_4;
 };
 
 }  // namespace rf
