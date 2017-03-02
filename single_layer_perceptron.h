@@ -91,7 +91,8 @@ class SingleLayerPerceptron {
                          activate_, raw_sums[i], features[weight]);
       }
       // Bias can be treated as a weight with a constant feature value of 1.
-      biases_[i] = weight_update(1, error, learning_rate_, biases_[i]);
+      biases_[i] += weight_delta(learning_rate_, true_output[i],
+                                 actual_output[i], activate_, raw_sums[i], 1);
     }
   }
 
