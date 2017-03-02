@@ -15,10 +15,11 @@ namespace rf {
 
 namespace {
 
-// Peceptron delta rule.
-double weight_update(const double& feature, const double error,
-                     const double learning_rate, const double current_weight) {
-  return current_weight + (learning_rate * error * feature);
+template <typename ActivationFn>
+double weight_delta(const double learning_rate, const double target,
+                    const double output, const ActivationFn& fn,
+                    const double sum, const double feature) {
+  return learning_rate * (target - output) * fn.derivative(sum) * feature;
 }
 
 template <typename T>
@@ -56,6 +57,16 @@ class SingleLayerPerceptron {
                     std::bind(random_real_range<double>, -1, 1));
   }
 
+  // Return the raw weighted sum.
+  std::vector<double> apply(const std::vector<double>& features) const {
+    std::vector<double> output(n_outputs_);
+    for (auto i = 0ul; i < n_outputs_; ++i) {
+      output[i] = std::inner_product(weights_[i].begin(), weights_[i].end(),
+                                     features.begin(), biases_[i]);
+    }
+    return output;
+  }
+
   // Given a set of features, return the activation values of the output layers.
   std::vector<double> predict(const std::vector<double>& features) const {
     std::vector<double> output(n_outputs_);
@@ -70,12 +81,14 @@ class SingleLayerPerceptron {
   // Learn a training example and update the weights and biases accordingly.
   void learn(const std::vector<double>& features,
              const std::vector<double>& true_output) {
+    const auto raw_sums = apply(features);
     const auto actual_output = predict(features);
     for (auto i = 0ul; i < n_outputs_; ++i) {
       const auto error = true_output[i] - actual_output[i];
       for (auto weight = 0ul; weight < n_inputs_; ++weight) {
-        weights_[i][weight] = weight_update(
-            features[weight], error, learning_rate_, weights_[i][weight]);
+        weights_[i][weight] +=
+            weight_delta(learning_rate_, true_output[i], actual_output[i],
+                         activate_, raw_sums[i], features[weight]);
       }
       // Bias can be treated as a weight with a constant feature value of 1.
       biases_[i] = weight_update(1, error, learning_rate_, biases_[i]);
@@ -93,10 +106,17 @@ class SingleLayerPerceptron {
 
 struct StepActivation {
   double operator()(const double x) const { return x > 0 ? 1 : -1; }
+
+  double derivative(const double x) const { return 1; }
 };
 
 struct SigmoidActivation {
   double operator()(const double x) const { return 1 / (1 + std::exp(-x)); }
+
+  double derivative(const double x) const {
+    const double fx = (*this)(x);
+    return fx * (1 - fx);
+  }
 };
 
 }  // namespace rf
