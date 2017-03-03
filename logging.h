@@ -34,6 +34,33 @@ struct LogStream {
 // Default logging stream to be used.
 logging::LogStream LOG;
 
+class ProgressBar {
+ public:
+  ProgressBar(int max) : max_(max), done_(0) { show(); };
+
+  void show() {
+    // Move cursor back to start of line;
+    std::cout << "\r";
+    std::cout << "[";
+    for (int i = 0; i < done_; ++i) {
+      std::cout << "|";
+    }
+    for (int i = 0; i < max_ - done_; ++i) {
+      std::cout << " ";
+    }
+    std::cout << "]";
+    std::cout.flush();
+  }
+
+  void progress(int delta) {
+    done_ = std::min(done_ + delta, max_);
+    show();
+  }
+
+ private:
+  int max_, done_;
+};
+
 }  // namespace qp
 
 #endif /* LOGGING_H */
