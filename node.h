@@ -10,7 +10,6 @@
 #include "criterion.h"
 #include "dataset.h"
 #include "functional.h"
-#include "mahalanobis.h"
 
 namespace qp {
 namespace rf {
@@ -83,47 +82,10 @@ class DecisionNode {
   // samples.
   double predict() const { return prediction_; }
 
-  // Initialize the mahalanobis distance calculator.
-  void initialize_mahalanobis(SDIter first, SDIter last) {
-    distro_project_ = splitter_.get_features();
-
-    // Determine how many samples have the mode label.
-    std::size_t distro_size = 0;
-    for (auto i = first; i != last; ++i) {
-      if (i->get().label == prediction_) {
-        ++distro_size;
-      }
-    }
-
-    cv::Mat distribution(distro_size, distro_project_.size(), CV_64F);
-    std::size_t c = 0;
-
-    // Create the distribution.
-    for (auto i = first; i != last; ++i) {
-      if (i->get().label == prediction_) {
-        for (int j = 0; j < distro_project_.size(); ++j) {
-          distribution.at<double>(c, j) = i->get().features[distro_project_[j]];
-        }
-        ++c;
-      }
-    }
-
-    mc_.initialize(distribution);
-  }
-
-  double mahalanobis_distance(const std::vector<double>& features) const {
-    cv::Mat projected(1, distro_project_.size(), CV_64F);
-    for (int i = 0; i < distro_project_.size(); ++i) {
-      projected.at<double>(0, i) = features[distro_project_[i]];
-    }
-
-    return mc_.distance(projected);
-  }
-
   // Whether or not this node is ready to predict.
   bool leaf() const { return leaf_; }
 
-  bool make_leaf() {
+  void make_leaf() {
     leaf_ = true;
     left_.reset();
     right_.reset();
@@ -152,9 +114,6 @@ class DecisionNode {
   }
 
  private:
-  MahalanobisCalculator mc_;
-  std::vector<FeatureIndex> distro_project_;
-
   std::unique_ptr<DecisionNode<SplitterFn>> left_, right_;
 
   double prediction_;

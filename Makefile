@@ -1,15 +1,15 @@
 all:
-	clang++ main.cpp -std=c++1y -O3 -pthread -lopencv_core
+	clang++ main.cpp -std=c++1y -O3 -pthread
 
 debug:
-	clang++ main.cpp -std=c++1y -O3 -pthread -g3 -lopencv_core
+	clang++ main.cpp -std=c++1y -O3 -pthread -g3
 
 sharc:
-	g++ main.cpp -std=c++1y -O3 -pthread -lopencv_core -I/opt/sharcnet/opencv/2.4.9/include/ -L/opt/sharcnet/opencv/2.4.9/lib/ -Wl,-R/opt/sharcnet/opencv/2.4.9/lib/ -D N_WORKERS=12 -ltcmalloc
+	g++ main.cpp -std=c++1y -O3 -pthread -D N_WORKERS=12 -ltcmalloc
 
 sharc_debug:
-	g++ main.cpp -std=c++1y -O0 -pthread -g3 -lopencv_core -I/opt/sharcnet/opencv/2.4.9/include/ -L/opt/sharcnet/opencv/2.4.9/lib/ -Wl,-R/opt/sharcnet/opencv/2.4.9/lib/ -D N_WORKERS=12
+	g++ main.cpp -std=c++1y -O0 -pthread -g3 -D N_WORKERS=12
 
 sharc_bin:
-	g++ main.cpp -std=c++1y -O3 -pthread -lopencv_core -I/opt/sharcnet/opencv/2.4.9/include/ -L/opt/sharcnet/opencv/2.4.9/lib/ -Wl,-R/opt/sharcnet/opencv/2.4.9/lib/ -D N_WORKERS=12 -o bin/${FNAME} -ltcmalloc
+	g++ main.cpp -std=c++1y -O3 -pthread -D N_WORKERS=12 -o bin/${FNAME} -ltcmalloc
 
