@@ -32,6 +32,7 @@ class DecisionNode {
     // node.
     if (single_label(first, last)) {
       make_leaf();
+      return;
     }
 
     double min_impurity = std::numeric_limits<double>::max();
