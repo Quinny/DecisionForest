@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "functional.h"
+#include "logging.h"
 #include "threadpool.h"
 #include "tree.h"
 
@@ -33,6 +34,8 @@ class DecisionForest {
   // Trains each tree in the forest on the provided dataset.  Tree training is
   // done in parallel on the provided thread pool.
   void train(const DataSet& data_set) {
+    qp::ProgressBar progress(trees_.size());
+
     std::vector<std::future<void>> futures;
     futures.reserve(trees_.size());
     for (auto& tree : trees_) {
@@ -45,6 +48,7 @@ class DecisionForest {
     // Thread pool futures are non-blocking.
     for (auto& fut : futures) {
       fut.wait();
+      progress.progress(1);
     }
   }
 
