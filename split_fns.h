@@ -2,6 +2,7 @@
 #define SPLIT_FNS_H
 
 #include <experimental/optional>
+#include <map>
 
 #include "dataset.h"
 #include "node.h"
@@ -156,18 +157,18 @@ class HighestAverageSigmoidActivation {
     });
 
     auto label_ids = label_identifiers(first, last);
-    layer_.reset(new SingleLayerPerceptron<SigmoidActivation>(
+    layer_.reset(new SingleLayerPerceptron<FastSigmoid>(
         N, label_ids.size(), random_real_range<double>(0, 1)));
 
     // First pass train the perceptron.
-    std::vector<double> expected_output(label_ids.size(), 0);
+    std::vector<double> expected_output(label_ids.size(), -1);
     std::vector<double> projected(N);
     for (auto i = first; i != last; ++i) {
       const auto label_id = label_ids[i->get().label];
       expected_output[label_id] = 1;
       project(i->get().features, projection_, projected.begin());
       layer_->learn(projected, expected_output);
-      expected_output[label_id] = 0;
+      expected_output[label_id] = -1;
     }
 
     // Second pass determine which output neuron contains the maximum average
@@ -190,7 +191,7 @@ class HighestAverageSigmoidActivation {
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {
     const auto projected = project(features, projection_);
     const auto output = layer_->predict(projected);
-    return output[maximum_activation_neuron_] >= 0.5
+    return output[maximum_activation_neuron_] > 0
                ? qp::rf::SplitDirection::LEFT
                : qp::rf::SplitDirection::RIGHT;
   }
@@ -205,7 +206,7 @@ class HighestAverageSigmoidActivation {
   std::size_t n_input_features() const { return N; }
 
  private:
-  std::unique_ptr<SingleLayerPerceptron<SigmoidActivation>> layer_;
+  std::unique_ptr<SingleLayerPerceptron<FastSigmoid>> layer_;
   std::size_t maximum_activation_neuron_;
   std::vector<FeatureIndex> projection_;
 };

@@ -95,6 +95,10 @@ struct StepActivation {
   double operator()(const double x) const { return x > 0 ? 1 : -1; }
 };
 
+struct FastSigmoid {
+  double operator()(const double x) const { return x / (1 + std::abs(x)); }
+};
+
 struct SigmoidActivation {
   double operator()(const double x) const { return 1 / (1 + std::exp(-x)); }
 };
