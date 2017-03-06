@@ -129,9 +129,14 @@ std::vector<double> zero_center_mean(DataSet& dataset) {
 
   for (const auto& example : dataset) {
     for (auto feature = 0ul; feature < n_features; ++feature) {
-      means[feature] += example.features[feature] / n_samples_real;
+      means[feature] += example.features[feature];
     }
   }
+
+  for (auto& mean : means) {
+    mean /= n_samples_real;
+  }
+
   zero_center_mean(dataset, means);
   return means;
 }
