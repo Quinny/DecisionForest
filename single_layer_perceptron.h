@@ -131,6 +131,17 @@ struct Sigmoid {
   double min() const { return 0; }
 };
 
+// Tanh activation function.
+struct Tanh {
+  double operator()(const double x) const { return std::tanh(x); }
+
+  double max() const { return 1; }
+
+  double mid() const { return 0; }
+
+  double min() const { return -1; }
+};
+
 }  // namespace rf
 }  // namespace qp
 
