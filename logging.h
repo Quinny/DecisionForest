@@ -48,7 +48,7 @@ class ProgressBar {
     for (int i = 0; i < max_ - done_; ++i) {
       std::cout << " ";
     }
-    std::cout << "]";
+    std::cout << "](" << done_ << "/" << max_ << ")";
     std::cout.flush();
   }
 
@@ -56,6 +56,9 @@ class ProgressBar {
     done_ = std::min(done_ + delta, max_);
     show();
   }
+
+  // Push cursor to next line.
+  ~ProgressBar() { std::cout << std::endl; }
 
  private:
   int max_, done_;
