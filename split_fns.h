@@ -164,14 +164,14 @@ class HighestAverageActivation {
 
     // First pass train the perceptron.
     std::vector<double> expected_output(label_ids.size(),
-                                        layer_.minimum_activation());
+                                        layer_->minimum_activation());
     std::vector<double> projected(N);
     for (auto example = first; example != last; ++example) {
       const auto label_id = label_ids[example->get().label];
-      expected_output[label_id] = layer_.maximum_activation();
+      expected_output[label_id] = layer_->maximum_activation();
       project(example->get().features, projection_, projected.begin());
       layer_->learn(projected, expected_output);
-      expected_output[label_id] = layer_.minimum_activation();
+      expected_output[label_id] = layer_->minimum_activation();
     }
 
     // Second pass determine which output neuron contains the maximum average
@@ -198,7 +198,7 @@ class HighestAverageActivation {
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {
     const auto projected = project(features, projection_);
     const auto output = layer_->predict(projected);
-    return output[maximum_activation_neuron_] > layer_.fire_threshold()
+    return output[maximum_activation_neuron_] > layer_->fire_threshold()
                ? qp::rf::SplitDirection::LEFT
                : qp::rf::SplitDirection::RIGHT;
   }
