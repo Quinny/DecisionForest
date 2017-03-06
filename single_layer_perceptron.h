@@ -82,6 +82,12 @@ class SingleLayerPerceptron {
     }
   }
 
+  double maximum_activation() const { return activate_.max(); }
+
+  double minimum_activation() const { return activate_.min(); }
+
+  double fire_threshold() const { return activate_.mid(); }
+
  private:
   Matrix<double> weights_;      // n_outputs x n_inputs
   std::vector<double> biases_;  // 1 x n_outputs
@@ -91,16 +97,38 @@ class SingleLayerPerceptron {
   double learning_rate_;
 };
 
-struct StepActivation {
+// Simple step activation.
+struct Step {
   double operator()(const double x) const { return x > 0 ? 1 : -1; }
+
+  double max() const { return 1; }
+
+  double mid() const { return 0; }
+
+  double min() const { return -1; }
 };
 
+// Models the sigmoid function but is faster to compute, since abs is
+// significantly cheaper than exp.
 struct FastSigmoid {
   double operator()(const double x) const { return x / (1 + std::abs(x)); }
+
+  double max() const { return 1; }
+
+  double mid() const { return 0; }
+
+  double min() const { return -1; }
 };
 
-struct SigmoidActivation {
+// Sigmoid activation function.
+struct Sigmoid {
   double operator()(const double x) const { return 1 / (1 + std::exp(-x)); }
+
+  double max() const { return 1; }
+
+  double mid() const { return 0.5; }
+
+  double min() const { return 0; }
 };
 
 }  // namespace rf
