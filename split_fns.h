@@ -91,12 +91,12 @@ class RandomMultivariateSplit {
 
  private:
   std::vector<FeatureIndex> feature_indices_;
-  SingleLayerPerceptron<StepActivation> line_;
+  SingleLayerPerceptron<Step> line_;
 };
 
 // Trains a perceptron in a mode-vs-all fashion, and splits based on the
 // predicted outcome.
-template <int N>
+template <typename Activation, int N>
 class ModeVsAllPerceptronSplit {
  public:
   ModeVsAllPerceptronSplit() : layer_(N, 1, random_real_range<double>(0, 1)) {}
@@ -107,21 +107,23 @@ class ModeVsAllPerceptronSplit {
                                               total_features - 1));
 
     const auto should_fire = mode_label(first, last);
-    const std::vector<double> fire = {1};
-    const std::vector<double> not_fire = {-1};
+    const std::vector<double> fire = {layer_.maximum_activation()};
+    const std::vector<double> not_fire = {layer_.minimum_activation()};
 
     std::vector<double> projected(N);
-    for (auto i = first; i != last; ++i) {
-      project(i->get().features, projection_, projected.begin());
-      layer_.learn(projected, i->get().label == should_fire ? fire : not_fire);
+    for (auto example = first; example != last; ++example) {
+      project(example->get().features, projection_, projected.begin());
+      layer_.learn(projected,
+                   example->get().label == should_fire ? fire : not_fire);
     }
   }
 
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {
     const auto projected = project(features, projection_);
     const auto output = layer_.predict(projected);
-    return output.front() == 1 ? qp::rf::SplitDirection::LEFT
-                               : qp::rf::SplitDirection::RIGHT;
+    return output.front() > layer_.fire_threshold()
+               ? qp::rf::SplitDirection::LEFT
+               : qp::rf::SplitDirection::RIGHT;
   }
 
   const std::vector<FeatureIndex>& get_features() const { return projection_; }
@@ -129,15 +131,15 @@ class ModeVsAllPerceptronSplit {
   std::size_t n_input_features() const { return N; }
 
  private:
-  SingleLayerPerceptron<StepActivation> layer_;
+  SingleLayerPerceptron<Activation> layer_;
   std::vector<FeatureIndex> projection_;
 };
 
 // Trains a perceptron in a one-vs-one manner, and then determines which class
-// produces the highest average sigmoid activation value.  The activation of
+// produces the highest average activation value.  The activation of
 // that class is then used as the split criteria.
-template <int N>
-class HighestAverageSigmoidActivation {
+template <typename Activation, int N>
+class HighestAverageActivation {
  public:
   // Assign each label an incremental integer identifier.
   std::map<double, int> label_identifiers(SDIter first, SDIter last) const {
@@ -157,30 +159,35 @@ class HighestAverageSigmoidActivation {
     });
 
     auto label_ids = label_identifiers(first, last);
-    layer_.reset(new SingleLayerPerceptron<FastSigmoid>(
+    layer_.reset(new SingleLayerPerceptron<Activation>(
         N, label_ids.size(), random_real_range<double>(0, 1)));
 
     // First pass train the perceptron.
-    std::vector<double> expected_output(label_ids.size(), -1);
+    std::vector<double> expected_output(label_ids.size(),
+                                        layer_.minimum_activation());
     std::vector<double> projected(N);
-    for (auto i = first; i != last; ++i) {
-      const auto label_id = label_ids[i->get().label];
-      expected_output[label_id] = 1;
-      project(i->get().features, projection_, projected.begin());
+    for (auto example = first; example != last; ++example) {
+      const auto label_id = label_ids[example->get().label];
+      expected_output[label_id] = layer_.maximum_activation();
+      project(example->get().features, projection_, projected.begin());
       layer_->learn(projected, expected_output);
-      expected_output[label_id] = -1;
+      expected_output[label_id] = layer_.minimum_activation();
     }
 
     // Second pass determine which output neuron contains the maximum average
     // activation value.
     std::vector<double> average_activations(label_ids.size(), 0);
     double n_samples_real = static_cast<double>(last - first + 1);
-    for (auto i = first; i != last; ++i) {
-      project(first->get().features, projection_, projected.begin());
+    for (auto example = first; example != last; ++example) {
+      project(example->get().features, projection_, projected.begin());
       const auto output = layer_->predict(projected);
       for (auto activation = 0ul; activation < output.size(); ++activation) {
-        average_activations[activation] += output[activation] / n_samples_real;
+        average_activations[activation] += output[activation];
       }
+    }
+
+    for (auto& activation : average_activations) {
+      activation /= n_samples_real;
     }
 
     const auto max = std::max_element(average_activations.begin(),
@@ -191,7 +198,7 @@ class HighestAverageSigmoidActivation {
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {
     const auto projected = project(features, projection_);
     const auto output = layer_->predict(projected);
-    return output[maximum_activation_neuron_] > 0
+    return output[maximum_activation_neuron_] > layer_.fire_threshold()
                ? qp::rf::SplitDirection::LEFT
                : qp::rf::SplitDirection::RIGHT;
   }
@@ -206,13 +213,13 @@ class HighestAverageSigmoidActivation {
   std::size_t n_input_features() const { return N; }
 
  private:
-  std::unique_ptr<SingleLayerPerceptron<FastSigmoid>> layer_;
+  std::unique_ptr<SingleLayerPerceptron<Activation>> layer_;
   std::size_t maximum_activation_neuron_;
   std::vector<FeatureIndex> projection_;
 };
 
 // Chooses a random split function from all of the above.
-template <int N>
+template <typename Activation, int N>
 class RandomSplitFunction {
  public:
   template <typename T>
@@ -225,9 +232,9 @@ class RandomSplitFunction {
     } else if (random == 1) {
       split_fn_2 = RandomMultivariateSplit<N>();
     } else if (random == 2) {
-      split_fn_3 = ModeVsAllPerceptronSplit<N>();
+      split_fn_3 = ModeVsAllPerceptronSplit<Activation, N>();
     } else {
-      split_fn_4 = HighestAverageSigmoidActivation<N>();
+      split_fn_4 = HighestAverageActivation<Activation, N>();
     }
 
     if (split_fn_1) split_fn_1->train(first, last);
@@ -259,8 +266,8 @@ class RandomSplitFunction {
   // TODO: once std::variant becomes standardized used that.
   Maybe<RandomUnivariateSplit> split_fn_1;
   Maybe<RandomMultivariateSplit<N>> split_fn_2;
-  Maybe<ModeVsAllPerceptronSplit<N>> split_fn_3;
-  Maybe<HighestAverageSigmoidActivation<N>> split_fn_4;
+  Maybe<ModeVsAllPerceptronSplit<Step, N>> split_fn_3;
+  Maybe<HighestAverageActivation<Activation, N>> split_fn_4;
 };
 
 }  // namespace rf
