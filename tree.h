@@ -18,7 +18,7 @@ class DecisionTree {
  public:
   // Create a DecisionTree with a given depth.
   DecisionTree(int max_depth, TreeType type = TreeType::SINGLE_FOREST)
-      : max_depth_(max_depth), type_(type) {}
+      : max_depth_(max_depth), type_(type), depth_(0) {}
 
   // Walks the tree based on the feature vector and returns the leaf node.
   const DecisionNode<SplitterFn>* walk(
@@ -49,6 +49,9 @@ class DecisionTree {
   // depth is pretty shallow.
   void train_recurse(DecisionNode<SplitterFn>* current, SDIter first,
                      SDIter last, int current_depth) {
+    // Record the current depth.
+    depth_ = std::max(depth_, current_depth);
+
     // Train the current node.
     current->train(first, last);
 
@@ -92,9 +95,12 @@ class DecisionTree {
     return sum;
   }
 
+  int depth() const { return depth_; }
+
  private:
   std::unique_ptr<DecisionNode<SplitterFn>> root_;
   int max_depth_;
+  int depth_;
   TreeType type_;
 };
 

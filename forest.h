@@ -94,6 +94,14 @@ class DecisionForest {
     return prediction->first;
   }
 
+  double average_depth() const {
+    int sum = 0;
+    for (const auto& tree : trees_) {
+      sum += tree.depth();
+    }
+    return sum / static_cast<double>(trees_.size());
+  }
+
  private:
   std::vector<DecisionTree<SpiltterFn>> trees_;
   qp::threading::Threadpool* thread_pool_;
