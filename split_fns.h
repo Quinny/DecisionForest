@@ -135,6 +135,53 @@ class ModeVsAllPerceptronSplit {
   std::vector<FeatureIndex> projection_;
 };
 
+// Selects a random contiguous block of features instead of randomly distributed
+// ones.  The idea is that this will be more meaniningful for sequenced data.
+template <typename Activation, int BlockSize>
+class ModeVsAllBlockPerceptronSplit {
+ public:
+  ModeVsAllBlockPerceptronSplit()
+      : layer_(BlockSize, 1, random_real_range<double>(0, 1)),
+        block_buffer_(BlockSize) {}
+
+  void load_block(const std::vector<double>& features,
+                  std::vector<double>& buffer) {
+    std::copy(features.begin() + block_start_,
+              features.begin() + block_start_ + BlockSize, buffer.begin());
+  }
+
+  void train(SDIter first, SDIter last) {
+    const auto total_features = first->get().features.size();
+    block_start_ =
+        random_range<FeatureIndex>(0, total_features - 1 - BlockSize);
+
+    const auto should_fire = mode_label(first, last);
+    const std::vector<double> fire = {layer_.maximum_activation()};
+    const std::vector<double> not_fire = {layer_.minimum_activation()};
+
+    for (auto example = first; example != last; ++example) {
+      load_block(example->get().features, block_buffer_);
+      layer_.learn(block_buffer_,
+                   example->get().label == should_fire ? fire : not_fire);
+    }
+  }
+
+  qp::rf::SplitDirection apply(const std::vector<double>& features) const {
+    load_block(features, block_buffer_);
+    const auto output = layer_.predict(block_buffer_);
+    return output.front() > layer_.fire_threshold()
+               ? qp::rf::SplitDirection::LEFT
+               : qp::rf::SplitDirection::RIGHT;
+  }
+
+  std::size_t n_input_features() const { return BlockSize; }
+
+ private:
+  mutable std::vector<double> block_buffer_;
+  SingleLayerPerceptron<Activation> layer_;
+  std::size_t block_start_;
+};
+
 // Trains a perceptron in a one-vs-one manner, and then determines which class
 // produces the highest average activation value.  The activation of
 // that class is then used as the split criteria.
