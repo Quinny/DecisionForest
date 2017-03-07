@@ -145,7 +145,7 @@ class ModeVsAllBlockPerceptronSplit {
         block_buffer_(BlockSize) {}
 
   void load_block(const std::vector<double>& features,
-                  std::vector<double>& buffer) {
+                  std::vector<double>& buffer) const {
     std::copy(features.begin() + block_start_,
               features.begin() + block_start_ + BlockSize, buffer.begin());
   }
