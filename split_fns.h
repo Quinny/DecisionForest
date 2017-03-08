@@ -99,7 +99,10 @@ class RandomMultivariateSplit {
 template <typename Activation, int N>
 class ModeVsAllPerceptronSplit {
  public:
-  ModeVsAllPerceptronSplit() : layer_(N, 1, random_real_range<double>(0, 1)) {}
+  ModeVsAllPerceptronSplit()
+      : layer_(N, 1, random_real_range<double>(0, 1)),
+        input_buffer_(N),
+        output_buffer_(1) {}
 
   void train(SDIter first, SDIter last) {
     const auto total_features = first->get().features.size();
@@ -110,18 +113,17 @@ class ModeVsAllPerceptronSplit {
     const std::vector<double> fire = {layer_.maximum_activation()};
     const std::vector<double> not_fire = {layer_.minimum_activation()};
 
-    std::vector<double> projected(N);
     for (auto example = first; example != last; ++example) {
-      project(example->get().features, projection_, projected.begin());
-      layer_.learn(projected,
+      project(example->get().features, projection_, input_buffer_.begin());
+      layer_.learn(input_buffer_,
                    example->get().label == should_fire ? fire : not_fire);
     }
   }
 
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {
-    const auto projected = project(features, projection_);
-    const auto output = layer_.predict(projected);
-    return output.front() > layer_.fire_threshold()
+    project(features, projection_, input_buffer_.begin());
+    output_buffer_ = layer_.predict(input_buffer_);
+    return output_buffer_.front() > layer_.fire_threshold()
                ? qp::rf::SplitDirection::LEFT
                : qp::rf::SplitDirection::RIGHT;
   }
@@ -133,6 +135,8 @@ class ModeVsAllPerceptronSplit {
  private:
   SingleLayerPerceptron<Activation> layer_;
   std::vector<FeatureIndex> projection_;
+  mutable std::vector<double> input_buffer_;
+  mutable std::vector<double> output_buffer_;
 };
 
 // Selects a random contiguous block of features instead of randomly distributed
@@ -295,6 +299,7 @@ class RandomSplitFunction {
     if (split_fn_2) return split_fn_2->apply(features);
     if (split_fn_3) return split_fn_3->apply(features);
     if (split_fn_4) return split_fn_4->apply(features);
+    assert(false);
   }
 
   const std::vector<FeatureIndex> get_features() const {
@@ -304,16 +309,13 @@ class RandomSplitFunction {
     if (split_fn_4) return split_fn_4->get_features();
   }
 
-  std::size_t n_input_features() const {
-    if (split_fn_1) return 1;
-    return N;
-  }
+  std::size_t n_input_features() const { return N; }
 
  private:
   // TODO: once std::variant becomes standardized used that.
   Maybe<RandomUnivariateSplit> split_fn_1;
   Maybe<RandomMultivariateSplit<N>> split_fn_2;
-  Maybe<ModeVsAllPerceptronSplit<Step, N>> split_fn_3;
+  Maybe<ModeVsAllPerceptronSplit<Activation, N>> split_fn_3;
   Maybe<HighestAverageActivation<Activation, N>> split_fn_4;
 };
 
