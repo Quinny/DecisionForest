@@ -45,15 +45,16 @@ class SingleLayerPerceptron {
       : n_inputs_(n_inputs),
         n_outputs_(n_outputs),
         learning_rate_(learning_rate) {
+    double weight_range = 1 / std::sqrt(n_inputs);
     weights_.resize(n_outputs_);
-    std::for_each(
-        weights_.begin(), weights_.end(), [this](std::vector<double>& wv) {
-          generate_back_n(wv, n_inputs_,
-                          std::bind(random_real_range<double>, -1, 1));
-        });
+    std::for_each(weights_.begin(), weights_.end(),
+                  [this, weight_range](std::vector<double>& wv) {
+                    generate_back_n(wv, n_inputs_,
+                                    std::bind(random_real_range<double>,
+                                              -weight_range, weight_range));
+                  });
 
-    generate_back_n(biases_, n_outputs_,
-                    std::bind(random_real_range<double>, -1, 1));
+    generate_back_n(biases_, n_outputs_, []() { return 0; });
   }
 
   // Given a set of features, return the activation values of the output layers.
