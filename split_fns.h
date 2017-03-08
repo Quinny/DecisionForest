@@ -99,10 +99,7 @@ class RandomMultivariateSplit {
 template <typename Activation, int N>
 class ModeVsAllPerceptronSplit {
  public:
-  ModeVsAllPerceptronSplit()
-      : layer_(N, 1, random_real_range<double>(0, 1)),
-        input_buffer_(N),
-        output_buffer_(1) {}
+  ModeVsAllPerceptronSplit() : layer_(N, 1, random_real_range<double>(0, 1)) {}
 
   void train(SDIter first, SDIter last) {
     const auto total_features = first->get().features.size();
@@ -113,17 +110,18 @@ class ModeVsAllPerceptronSplit {
     const std::vector<double> fire = {layer_.maximum_activation()};
     const std::vector<double> not_fire = {layer_.minimum_activation()};
 
+    std::vector<double> input_buffer(N);
     for (auto example = first; example != last; ++example) {
-      project(example->get().features, projection_, input_buffer_.begin());
-      layer_.learn(input_buffer_,
+      project(example->get().features, projection_, input_buffer.begin());
+      layer_.learn(input_buffer,
                    example->get().label == should_fire ? fire : not_fire);
     }
   }
 
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {
-    project(features, projection_, input_buffer_.begin());
-    output_buffer_ = layer_.predict(input_buffer_);
-    return output_buffer_.front() > layer_.fire_threshold()
+    const auto input_buffer = project(features, projection_);
+    const auto output_buffer = layer_.predict(input_buffer);
+    return output_buffer.front() > layer_.fire_threshold()
                ? qp::rf::SplitDirection::LEFT
                : qp::rf::SplitDirection::RIGHT;
   }
@@ -135,8 +133,6 @@ class ModeVsAllPerceptronSplit {
  private:
   SingleLayerPerceptron<Activation> layer_;
   std::vector<FeatureIndex> projection_;
-  mutable std::vector<double> input_buffer_;
-  mutable std::vector<double> output_buffer_;
 };
 
 // Selects a random contiguous block of features instead of randomly distributed
@@ -184,6 +180,90 @@ class ModeVsAllBlockPerceptronSplit {
   mutable std::vector<double> block_buffer_;
   SingleLayerPerceptron<Activation> layer_;
   std::size_t block_start_;
+};
+
+template <typename Activation, int N>
+class MinimumAverageError {
+ public:
+  // Assign each label an incremental integer identifier.
+  std::map<double, int> label_identifiers(SDIter first, SDIter last) const {
+    std::map<double, int> ids;
+    int current_id = 0;
+    for (auto i = first; i != last; ++i) {
+      const auto check = ids.insert({i->get().label, current_id});
+      if (check.second) ++current_id;
+    }
+    return ids;
+  }
+
+  void train(SDIter first, SDIter last) {
+    const auto total_features = first->get().features.size();
+    generate_back_n(projection_, N, [total_features]() {
+      return random_range<FeatureIndex>(0, total_features - 1);
+    });
+
+    auto label_ids = label_identifiers(first, last);
+    layer_.reset(new SingleLayerPerceptron<Activation>(
+        N, label_ids.size(), random_real_range<double>(0, 1)));
+
+    // First pass train the perceptron.
+    std::vector<double> expected_output(label_ids.size(),
+                                        layer_->minimum_activation());
+    std::vector<double> projected(N);
+    for (auto example = first; example != last; ++example) {
+      const auto label_id = label_ids[example->get().label];
+      expected_output[label_id] = layer_->maximum_activation();
+      project(example->get().features, projection_, projected.begin());
+      layer_->learn(projected, expected_output);
+      expected_output[label_id] = layer_->minimum_activation();
+    }
+
+    // Second pass determine which output neuron contains the minimum average
+    // activation value.
+    std::vector<double> average_error(label_ids.size(), 0);
+    for (auto example = first; example != last; ++example) {
+      project(example->get().features, projection_, projected.begin());
+      const auto output = layer_->predict(projected);
+      const auto label_id = label_ids[example->get().label];
+      expected_output[label_id] = layer_->maximum_activation();
+      for (auto activation = 0ul; activation < output.size(); ++activation) {
+        average_error[activation] +=
+            std::abs(expected_output[activation] - output[activation]);
+      }
+      expected_output[label_id] = layer_->minimum_activation();
+    }
+
+    double n_samples_real = static_cast<double>(last - first + 1);
+    for (auto& error : average_error) {
+      error /= n_samples_real;
+    }
+
+    const auto min =
+        std::min_element(average_error.begin(), average_error.end());
+    minimum_error_neuron_ = min - average_error.begin();
+  }
+
+  qp::rf::SplitDirection apply(const std::vector<double>& features) const {
+    const auto projected = project(features, projection_);
+    const auto output = layer_->predict(projected);
+    return output[minimum_error_neuron_] > layer_->fire_threshold()
+               ? qp::rf::SplitDirection::LEFT
+               : qp::rf::SplitDirection::RIGHT;
+  }
+
+  double activate(const std::vector<double>& features) const {
+    return layer_->predict(
+        project(features, projection_))[minimum_error_neuron_];
+  }
+
+  const std::vector<FeatureIndex>& get_features() const { return projection_; }
+
+  std::size_t n_input_features() const { return N; }
+
+ private:
+  std::unique_ptr<SingleLayerPerceptron<Activation>> layer_;
+  std::size_t minimum_error_neuron_;
+  std::vector<FeatureIndex> projection_;
 };
 
 // Trains a perceptron in a one-vs-one manner, and then determines which class
