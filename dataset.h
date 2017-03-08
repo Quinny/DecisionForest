@@ -141,6 +141,35 @@ std::vector<double> zero_center_mean(DataSet& dataset) {
   return means;
 }
 
+void divide_stddev(DataSet& dataset, const std::vector<double>& stddevs) {
+  for (auto& example : dataset) {
+    for (auto feature = 0ul; feature < example.features.size(); ++feature) {
+      example.features[feature] /=
+          (stddevs[feature] == 0 ? 1 : stddevs[feature]);
+    }
+  }
+}
+
+// Assumes 0 mean.
+std::vector<double> divide_stddev(DataSet& dataset) {
+  const auto n_features = dataset.front().features.size();
+  const auto n_samples_real = static_cast<double>(dataset.size());
+  std::vector<double> stddevs(n_features, 0);
+
+  for (const auto& example : dataset) {
+    for (auto feature = 0ul; feature < n_features; ++feature) {
+      stddevs[feature] += example.features[feature] * example.features[feature];
+    }
+  }
+
+  for (auto& stddev : stddevs) {
+    stddev = std::sqrt(stddev / n_samples_real);
+  }
+
+  divide_stddev(dataset, stddevs);
+  return stddevs;
+}
+
 }  // namespace rf
 }  // namespace qp
 #endif /* DATASET_H */
