@@ -41,9 +41,16 @@ class DecisionNode {
     // Try different split functions and choose the one which results in the
     // least impurity.
     const auto total_features = first->get().features.size();
-    const auto splits_to_try =
+    int splits_to_try =
         std::sqrt(total_features) * splitter_.n_input_features();
-    for (int i = 0; i < splits_to_try; ++i) {
+
+    // Flag to tell us if we have actually split the data yet.
+    bool actually_split = false;
+
+    // Try a minimum amount of times, but continue until we actually split the
+    // data.
+    while (splits_to_try > 0 || !actually_split) {
+      --splits_to_try;
       SplitterFn candidate_split;
       candidate_split.train(first, last);
 
@@ -58,6 +65,14 @@ class DecisionNode {
           ++went_right[sample->get().label];
         }
       }
+
+      // At this point we know there are at least two labels, so we reject
+      // any split function which does not separate the input at all.
+      if (went_left.empty() || went_right.empty()) {
+        continue;
+      }
+
+      actually_split = true;
 
       // Calculate the total impurity as a weighted average of the left and
       // right impurities.

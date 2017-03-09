@@ -27,9 +27,7 @@ class DecisionTree {
     // Start at the root node and walk down the tree until we reach a leaf.
     while (!current->leaf()) {
       const auto dir = current->split_direction(features);
-      const auto* next = current->get_child(dir);
-      if (next == nullptr) break;
-      current = next;
+      current = current->get_child(dir);
     }
     return current;
   }
@@ -69,15 +67,10 @@ class DecisionTree {
 
     // Train the left and right nodes on the portion of the data that was split
     // to them.
-    if (pivot_iter != first) {
-      train_recurse(current->make_child(SplitDirection::LEFT), first,
-                    pivot_iter, current_depth + 1);
-    }
-
-    if (pivot_iter != last) {
-      train_recurse(current->make_child(SplitDirection::RIGHT), pivot_iter,
-                    last, current_depth + 1);
-    }
+    train_recurse(current->make_child(SplitDirection::LEFT), first, pivot_iter,
+                  current_depth + 1);
+    train_recurse(current->make_child(SplitDirection::RIGHT), pivot_iter, last,
+                  current_depth + 1);
   }
 
   // Transform features based on a summation of activations.
@@ -88,9 +81,7 @@ class DecisionTree {
     while (!current->leaf()) {
       sum += current->activation(features);
       const auto dir = current->split_direction(features);
-      const auto* next = current->get_child(dir);
-      if (next == nullptr) break;
-      current = next;
+      current = current->get_child(dir);
     }
     return sum;
   }
