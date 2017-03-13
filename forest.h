@@ -22,12 +22,12 @@ class DecisionForest {
   // whether the forest will be used in a deep forest or not (deep forest's
   // perform extra computations not needed within single forests).
   DecisionForest(std::size_t n_trees, std::size_t max_depth,
-                 qp::threading::Threadpool* thread_pool,
+                 qp::threading::Threadpool* thread_pool, int leaf_threshold = 1,
                  TreeType tree_type = TreeType::SINGLE_FOREST)
       : thread_pool_(thread_pool) {
     trees_.reserve(n_trees);
     for (unsigned i = 0; i < n_trees; ++i) {
-      trees_.emplace_back(max_depth, tree_type);
+      trees_.emplace_back(max_depth, leaf_threshold, tree_type);
     }
   }
 

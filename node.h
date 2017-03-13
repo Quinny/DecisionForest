@@ -23,14 +23,11 @@ class DecisionNode {
   DecisionNode() : leaf_(false){};
 
   // Train this node to decide on the dataset rows between start and end.
-  void train(SDIter first, SDIter last) {
-    // The prediction at this node is the most occurring label in the incoming
-    // samples.
-    prediction_ = mode_label(first, last);
-
-    // If the dataset only contains one label, then make it a leaf decider
-    // node.
-    if (single_label(first, last)) {
+  void train(SDIter first, SDIter last, int leaf_threshold) {
+    // If the dataset only contains one label, or the number of samples
+    // is less than the provided threshold than make it a leaf.
+    if (last - first <= leaf_threshold || single_label(first, last)) {
+      prediction_ = mode_label(first, last);
       make_leaf();
       return;
     }
