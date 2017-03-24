@@ -57,17 +57,17 @@ class DeepForest {
     LOG << "training input layer" << std::endl;
     input_layer_.train(data_set);
     LOG << "transforming input layer" << std::endl;
-    auto transformed = input_layer_.transform(data_set);
+    input_layer_.transform(data_set);
 
     for (auto& layer : hidden_layers_) {
       LOG << "training hidden layer" << std::endl;
-      layer.train(transformed);
+      layer.train(data_set);
       LOG << "transforming data set" << std::endl;
-      transformed = layer.transform(transformed);
+      layer.transform(data_set);
     }
 
     LOG << "training output layer" << std::endl;
-    output_layer_.train(transformed);
+    output_layer_.train(data_set);
   }
 
   // Predict the label of a given feature set.
