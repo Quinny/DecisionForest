@@ -22,12 +22,12 @@ class DecisionForest {
   // whether the forest will be used in a deep forest or not (deep forest's
   // perform extra computations not needed within single forests).
   DecisionForest(std::size_t n_trees, std::size_t max_depth,
-                 qp::threading::Threadpool* thread_pool,
+                 qp::threading::Threadpool* thread_pool, int leaf_threshold = 1,
                  TreeType tree_type = TreeType::SINGLE_FOREST)
       : thread_pool_(thread_pool) {
     trees_.reserve(n_trees);
     for (unsigned i = 0; i < n_trees; ++i) {
-      trees_.emplace_back(max_depth, tree_type);
+      trees_.emplace_back(max_depth, leaf_threshold, tree_type);
     }
   }
 
@@ -55,29 +55,20 @@ class DecisionForest {
   // Transform the vector of features by computing the mahalanobis distance
   // to the leaf node in each tree which would classify the data.
   // The resulting vector will be 1 x |trees|.
-  std::vector<double> transform(const std::vector<double>& features) const {
-    std::vector<double> transformed(trees_.size());
+  void transform(std::vector<double>& features) const {
+    // TODO: does this matter? I think not since this tree was only trained on
+    // non-augumented features therefore it should never consider the newly
+    // added ones.
     for (auto i = 0UL; i < trees_.size(); ++i) {
-      transformed[i] = trees_[i].transform_summation(features);
+      features.push_back(trees_[i].transform_summation(features));
     }
-    return transformed;
   }
 
   // Transform an entire dataset of features.
-  DataSet transform(const DataSet& data_set) const {
-    auto transformed = empty_data_set(data_set.size(), trees_.size());
+  void transform(DataSet& data_set) const {
     for (auto sample = 0ul; sample < data_set.size(); ++sample) {
-      // Carry over the same label.
-      transformed[sample].label = data_set[sample].label;
-      for (auto tree = 0ul; tree < trees_.size(); ++tree) {
-        // Provide a transformed feature for each tree.
-        const auto dist =
-            trees_[tree].transform_summation(data_set[sample].features);
-
-        transformed[sample].features[tree] = dist;
-      }
+      transform(data_set[sample].features);
     }
-    return transformed;
   }
 
   // Predict the label of a set of features.  This is done by predicting the

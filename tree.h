@@ -17,8 +17,13 @@ template <typename SplitterFn>
 class DecisionTree {
  public:
   // Create a DecisionTree with a given depth.
-  DecisionTree(int max_depth, TreeType type = TreeType::SINGLE_FOREST)
-      : max_depth_(max_depth), type_(type), depth_(0) {}
+  DecisionTree(int max_depth, int leaf_threshold,
+               TreeType type = TreeType::SINGLE_FOREST)
+      : max_depth_(max_depth),
+        type_(type),
+        leaf_threshold_(leaf_threshold),
+        depth_(0),
+        n_leaves_(0) {}
 
   // Walks the tree based on the feature vector and returns the leaf node.
   const DecisionNode<SplitterFn>* walk(
@@ -51,10 +56,12 @@ class DecisionTree {
     depth_ = std::max(depth_, current_depth);
 
     // Train the current node.
-    current->train(first, last);
+    current->train(first, last, leaf_threshold_);
 
     if (current->leaf() || current_depth == max_depth_) {
       current->make_leaf();
+      current->set_index(n_leaves_);
+      ++n_leaves_;
       return;
     }
 
@@ -92,7 +99,9 @@ class DecisionTree {
   std::unique_ptr<DecisionNode<SplitterFn>> root_;
   int max_depth_;
   int depth_;
+  int leaf_threshold_;
   TreeType type_;
+  int n_leaves_;
 };
 
 }  // namespace rf

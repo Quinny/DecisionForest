@@ -2,7 +2,7 @@ all:
 	clang++ main.cpp -std=c++1y -O3 -pthread
 
 debug:
-	clang++ main.cpp -std=c++1y -O3 -pthread -g3
+	clang++ main.cpp -std=c++1y -pthread -g3
 
 sharc:
 	g++ main.cpp -std=c++1y -O3 -fopenmp -D_GLIBCXX_PARALLEL -pthread -D N_WORKERS=12 -ltcmalloc -funroll-loops

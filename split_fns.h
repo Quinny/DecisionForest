@@ -130,6 +130,10 @@ class ModeVsAllPerceptronSplit {
 
   std::size_t n_input_features() const { return N; }
 
+  double activate(const std::vector<double>& features) const {
+    return layer_.predict(features).front();
+  }
+
  private:
   SingleLayerPerceptron<Activation> layer_;
   std::vector<FeatureIndex> projection_;
