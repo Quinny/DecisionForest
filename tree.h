@@ -22,7 +22,8 @@ class DecisionTree {
       : max_depth_(max_depth),
         type_(type),
         leaf_threshold_(leaf_threshold),
-        depth_(0) {}
+        depth_(0),
+        n_leaves_(0) {}
 
   // Walks the tree based on the feature vector and returns the leaf node.
   const DecisionNode<SplitterFn>* walk(
@@ -59,6 +60,8 @@ class DecisionTree {
 
     if (current->leaf() || current_depth == max_depth_) {
       current->make_leaf();
+      current->set_index(n_leaves_);
+      ++n_leaves_;
       return;
     }
 
@@ -98,6 +101,7 @@ class DecisionTree {
   int depth_;
   int leaf_threshold_;
   TreeType type_;
+  int n_leaves_;
 };
 
 }  // namespace rf
