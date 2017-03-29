@@ -126,12 +126,18 @@ class DecisionNode {
     return splitter_.activate(features);
   }
 
+  void set_index(int i) { leaf_index_ = i; }
+
+  int index() const { return leaf_index_; }
+
  private:
   std::unique_ptr<DecisionNode<SplitterFn>> left_, right_;
 
   double prediction_;
   SplitterFn splitter_;
   bool leaf_;
+
+  int leaf_index_ = -1;
 };
 
 }  // namespace rf
