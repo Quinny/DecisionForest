@@ -82,7 +82,7 @@ class DecisionTree {
 
   // Transform features based on a summation of activations.
   double transform_summation(const std::vector<double>& features) const {
-    double sum = 0;
+    /*double sum = 0;
     const auto* current = root_.get();
     // Start at the root node and walk down the tree until we reach a leaf.
     while (!current->leaf()) {
@@ -90,7 +90,8 @@ class DecisionTree {
       const auto dir = current->split_direction(features);
       current = current->get_child(dir);
     }
-    return sum;
+    return sum;*/
+    return walk(features)->index();
   }
 
   int depth() const { return depth_; }
