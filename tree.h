@@ -10,13 +10,16 @@ namespace qp {
 namespace rf {
 
 // Enum denoting if the tree belongs to a single forest or a deep forest.
+// This was used at one point, but no longer is.  I decided to leave it here
+// just in case.
 enum class TreeType { SINGLE_FOREST, DEEP_FOREST };
 
 // A complete tree of DecisionNodes.
 template <typename SplitterFn>
 class DecisionTree {
  public:
-  // Create a DecisionTree with a given depth.
+  // Create a DecisionTree with a given depth and leaf threshold.  Passing
+  // -1 as the depth will cause the tree to be fully grown.
   DecisionTree(int max_depth, int leaf_threshold,
                TreeType type = TreeType::SINGLE_FOREST)
       : max_depth_(max_depth),
@@ -80,9 +83,12 @@ class DecisionTree {
                   current_depth + 1);
   }
 
-  // Transform features based on a summation of activations.
+  // Transform features and produce an augmented feature.
+  // Note: This is experimental and only used for deep-rfs.
   double transform_summation(const std::vector<double>& features) const {
-    /*double sum = 0;
+    /*
+    This represents the summation of activations features
+    double sum = 0;
     const auto* current = root_.get();
     // Start at the root node and walk down the tree until we reach a leaf.
     while (!current->leaf()) {
@@ -91,6 +97,8 @@ class DecisionTree {
       current = current->get_child(dir);
     }
     return sum;*/
+
+    // Playing with using the leaf index as the augmented feature.
     return walk(features)->index();
   }
 

@@ -12,6 +12,7 @@
 namespace qp {
 namespace logging {
 
+// Global flag to disable all logging within this file.
 bool enabled = true;
 
 // Write the current datetime followed by the user input to stdout.
@@ -39,6 +40,8 @@ class ProgressBar {
   ProgressBar(int max) : max_(max), done_(0) { show(); };
 
   void show() {
+    if (!logging::enabled) return;
+
     // Move cursor back to start of line;
     std::cout << "\r";
     std::cout << "[";

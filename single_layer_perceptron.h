@@ -39,7 +39,7 @@ class SingleLayerPerceptron {
         n_outputs_(biases.size()),
         learning_rate_(learning_rate) {}
 
-  // Initialize the layer with random weights and biases in [-1, 1].
+  // Initialize the layer with random weights and biases.
   SingleLayerPerceptron(std::size_t n_inputs, std::size_t n_outputs,
                         double learning_rate)
       : n_inputs_(n_inputs),
@@ -57,7 +57,7 @@ class SingleLayerPerceptron {
     generate_back_n(biases_, n_outputs_, []() { return 0; });
   }
 
-  // Given a set of features, return the activation values of the output layers.
+  // Given a set of features, return the activation values of the output layer.
   std::vector<double> predict(const std::vector<double>& features) const {
     std::vector<double> output(n_outputs_);
     for (auto i = 0ul; i < n_outputs_; ++i) {

@@ -22,7 +22,6 @@ namespace rf {
 class SplitFunction {
   virtual void train(SDIter, SDIter) = 0;
   virtual qp::rf::SplitDirection apply(const std::vector<double>&) const = 0;
-  virtual const std::vector<FeatureIndex>& get_features() const = 0;
   virtual std::size_t n_input_features() const = 0;
 };
 
@@ -48,10 +47,6 @@ class RandomUnivariateSplit {
                : qp::rf::SplitDirection::RIGHT;
   }
 
-  const std::vector<FeatureIndex> get_features() const {
-    return {feature_index_};
-  }
-
   std::size_t n_input_features() const { return 1; }
 
  private:
@@ -71,6 +66,7 @@ class RandomMultivariateSplit {
   void train(SDIter first, SDIter last) {
     (void)last;
 
+    // Randomly select N features.
     const auto total_features = first->get().features.size();
     generate_back_n(feature_indices_, N, [&]() {
       return random_range<FeatureIndex>(0, total_features - 1);
@@ -83,10 +79,6 @@ class RandomMultivariateSplit {
                : qp::rf::SplitDirection::RIGHT;
   }
 
-  const std::vector<FeatureIndex>& get_features() const {
-    return feature_indices_;
-  }
-
   std::size_t n_input_features() const { return N; }
 
  private:
@@ -95,17 +87,20 @@ class RandomMultivariateSplit {
 };
 
 // Trains a perceptron in a mode-vs-all fashion, and splits based on the
-// predicted outcome.
+// predicted outcome.  This split function should be paired with the Step
+// activation function, but it is left as a parameter for experimentation.
 template <typename Activation, int N>
 class ModeVsAllPerceptronSplit {
  public:
   ModeVsAllPerceptronSplit() : layer_(N, 1, random_real_range<double>(0, 1)) {}
 
   void train(SDIter first, SDIter last) {
+    // Randomly select features.
     const auto total_features = first->get().features.size();
     generate_back_n(projection_, N, std::bind(random_range<FeatureIndex>, 0,
                                               total_features - 1));
 
+    // Determine the mode laabel.
     const auto should_fire = mode_label(first, last);
     const std::vector<double> fire = {layer_.maximum_activation()};
     const std::vector<double> not_fire = {layer_.minimum_activation()};
@@ -113,6 +108,8 @@ class ModeVsAllPerceptronSplit {
     std::vector<double> input_buffer(N);
     for (auto example = first; example != last; ++example) {
       project(example->get().features, projection_, input_buffer.begin());
+      // If the example has the mode label then the perceptron should fire,
+      // otherwise it should not.
       layer_.learn(input_buffer,
                    example->get().label == should_fire ? fire : not_fire);
     }
@@ -125,8 +122,6 @@ class ModeVsAllPerceptronSplit {
                ? qp::rf::SplitDirection::LEFT
                : qp::rf::SplitDirection::RIGHT;
   }
-
-  const std::vector<FeatureIndex>& get_features() const { return projection_; }
 
   std::size_t n_input_features() const { return N; }
 
@@ -178,96 +173,15 @@ class ModeVsAllBlockPerceptronSplit {
                : qp::rf::SplitDirection::RIGHT;
   }
 
+  // TODO: this needs to be scaled.  Since the number of blocks of size N is
+  // much smaller than the number of feature combinations of size N, using
+  // BlockSize results in a lot of redundancy and increased training times.
   std::size_t n_input_features() const { return BlockSize; }
 
  private:
   mutable std::vector<double> block_buffer_;
   SingleLayerPerceptron<Activation> layer_;
   std::size_t block_start_;
-};
-
-template <typename Activation, int N>
-class MinimumAverageError {
- public:
-  // Assign each label an incremental integer identifier.
-  std::map<double, int> label_identifiers(SDIter first, SDIter last) const {
-    std::map<double, int> ids;
-    int current_id = 0;
-    for (auto i = first; i != last; ++i) {
-      const auto check = ids.insert({i->get().label, current_id});
-      if (check.second) ++current_id;
-    }
-    return ids;
-  }
-
-  void train(SDIter first, SDIter last) {
-    const auto total_features = first->get().features.size();
-    generate_back_n(projection_, N, [total_features]() {
-      return random_range<FeatureIndex>(0, total_features - 1);
-    });
-
-    auto label_ids = label_identifiers(first, last);
-    layer_.reset(new SingleLayerPerceptron<Activation>(
-        N, label_ids.size(), random_real_range<double>(0, 1)));
-
-    // First pass train the perceptron.
-    std::vector<double> expected_output(label_ids.size(),
-                                        layer_->minimum_activation());
-    std::vector<double> projected(N);
-    for (auto example = first; example != last; ++example) {
-      const auto label_id = label_ids[example->get().label];
-      expected_output[label_id] = layer_->maximum_activation();
-      project(example->get().features, projection_, projected.begin());
-      layer_->learn(projected, expected_output);
-      expected_output[label_id] = layer_->minimum_activation();
-    }
-
-    // Second pass determine which output neuron contains the minimum average
-    // activation value.
-    std::vector<double> average_error(label_ids.size(), 0);
-    for (auto example = first; example != last; ++example) {
-      project(example->get().features, projection_, projected.begin());
-      const auto output = layer_->predict(projected);
-      const auto label_id = label_ids[example->get().label];
-      expected_output[label_id] = layer_->maximum_activation();
-      for (auto activation = 0ul; activation < output.size(); ++activation) {
-        average_error[activation] +=
-            std::abs(expected_output[activation] - output[activation]);
-      }
-      expected_output[label_id] = layer_->minimum_activation();
-    }
-
-    double n_samples_real = static_cast<double>(last - first + 1);
-    for (auto& error : average_error) {
-      error /= n_samples_real;
-    }
-
-    const auto min =
-        std::min_element(average_error.begin(), average_error.end());
-    minimum_error_neuron_ = min - average_error.begin();
-  }
-
-  qp::rf::SplitDirection apply(const std::vector<double>& features) const {
-    const auto projected = project(features, projection_);
-    const auto output = layer_->predict(projected);
-    return output[minimum_error_neuron_] > layer_->fire_threshold()
-               ? qp::rf::SplitDirection::LEFT
-               : qp::rf::SplitDirection::RIGHT;
-  }
-
-  double activate(const std::vector<double>& features) const {
-    return layer_->predict(
-        project(features, projection_))[minimum_error_neuron_];
-  }
-
-  const std::vector<FeatureIndex>& get_features() const { return projection_; }
-
-  std::size_t n_input_features() const { return N; }
-
- private:
-  std::unique_ptr<SingleLayerPerceptron<Activation>> layer_;
-  std::size_t minimum_error_neuron_;
-  std::vector<FeatureIndex> projection_;
 };
 
 // Trains a perceptron in a one-vs-one manner, and then determines which class
@@ -288,6 +202,7 @@ class HighestAverageActivation {
   }
 
   void train(SDIter first, SDIter last) {
+    // Randomly select features.
     const auto total_features = first->get().features.size();
     generate_back_n(projection_, N, [total_features]() {
       return random_range<FeatureIndex>(0, total_features - 1);
@@ -330,6 +245,8 @@ class HighestAverageActivation {
     maximum_activation_neuron_ = max - average_activations.begin();
   }
 
+  // Determine the split direction based on the output of the maximum activation
+  // neuron determined during the activation pass.
   qp::rf::SplitDirection apply(const std::vector<double>& features) const {
     const auto projected = project(features, projection_);
     const auto output = layer_->predict(projected);
@@ -343,8 +260,6 @@ class HighestAverageActivation {
         project(features, projection_))[maximum_activation_neuron_];
   }
 
-  const std::vector<FeatureIndex>& get_features() const { return projection_; }
-
   std::size_t n_input_features() const { return N; }
 
  private:
@@ -354,6 +269,9 @@ class HighestAverageActivation {
 };
 
 // Chooses a random split function from all of the above.
+// Note that the activation parameter is only actually used if a perceptron
+// based split function is selected, and the N parameter is ignored if the
+// random univariate splitter is selected.
 template <typename Activation, int N>
 class RandomSplitFunction {
  public:
@@ -384,13 +302,6 @@ class RandomSplitFunction {
     if (split_fn_3) return split_fn_3->apply(features);
     if (split_fn_4) return split_fn_4->apply(features);
     assert(false);
-  }
-
-  const std::vector<FeatureIndex> get_features() const {
-    if (split_fn_1) return split_fn_1->get_features();
-    if (split_fn_2) return split_fn_2->get_features();
-    if (split_fn_3) return split_fn_3->get_features();
-    if (split_fn_4) return split_fn_4->get_features();
   }
 
   std::size_t n_input_features() const { return N; }

@@ -14,6 +14,7 @@
 namespace qp {
 namespace rf {
 
+// An enum defining split direction for a node.
 enum class SplitDirection { LEFT, RIGHT };
 
 // Represents a single node in a decision tree.
@@ -24,10 +25,11 @@ class DecisionNode {
 
   // Train this node to decide on the dataset rows between start and end.
   void train(SDIter first, SDIter last, int leaf_threshold) {
+    prediction_ = mode_label(first, last);
+
     // If the dataset only contains one label, or the number of samples
     // is less than the provided threshold than make it a leaf.
     if (last - first <= leaf_threshold || single_label(first, last)) {
-      prediction_ = mode_label(first, last);
       make_leaf();
       return;
     }
@@ -122,10 +124,14 @@ class DecisionNode {
     return dir == SplitDirection::LEFT ? left_.get() : right_.get();
   }
 
+  // Get the activation value of the split function.
+  // Note: this is experimental for deep-rfs, and only works if the splitter
+  // is perceptron based.
   double activation(const std::vector<double>& features) const {
     return splitter_.activate(features);
   }
 
+  // Set the leaf index of this node.
   void set_index(int i) { leaf_index_ = i; }
 
   int index() const { return leaf_index_; }

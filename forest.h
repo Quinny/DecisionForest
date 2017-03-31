@@ -20,7 +20,9 @@ class DecisionForest {
   // Grow a forest of size |n_trees|, each of depth |max_depth|. Passing -1 as a
   // the max_depth will cause the tree to be fully grown.  TreeType defines
   // whether the forest will be used in a deep forest or not (deep forest's
-  // perform extra computations not needed within single forests).
+  // perform extra computations not needed within single forests).  Leaf
+  // threshold defines the number of samples required to terminate the splitting
+  // of a node.
   DecisionForest(std::size_t n_trees, std::size_t max_depth,
                  qp::threading::Threadpool* thread_pool, int leaf_threshold = 1,
                  TreeType tree_type = TreeType::SINGLE_FOREST)
@@ -40,6 +42,8 @@ class DecisionForest {
     futures.reserve(trees_.size());
     for (auto& tree : trees_) {
       futures.emplace_back(thread_pool_->add([&data_set, &tree, this]() {
+        // Create a "sample" of the dataset so that each tree can re-arrange
+        // the order of the instances while leaving the original dataset intact.
         auto sample = sample_exactly(data_set);
         tree.train(sample);
       }));
@@ -52,19 +56,16 @@ class DecisionForest {
     }
   }
 
-  // Transform the vector of features by computing the mahalanobis distance
-  // to the leaf node in each tree which would classify the data.
-  // The resulting vector will be 1 x |trees|.
+  // Transform the feature vector.
+  // Note: This is experimental and only used for deep-rfs.
   void transform(std::vector<double>& features) const {
-    // TODO: does this matter? I think not since this tree was only trained on
-    // non-augumented features therefore it should never consider the newly
-    // added ones.
     for (auto i = 0UL; i < trees_.size(); ++i) {
       features.push_back(trees_[i].transform_summation(features));
     }
   }
 
   // Transform an entire dataset of features.
+  // Note: This is experimental and only used for deep-rfs.
   void transform(DataSet& data_set) const {
     for (auto sample = 0ul; sample < data_set.size(); ++sample) {
       transform(data_set[sample].features);
@@ -85,6 +86,8 @@ class DecisionForest {
     return prediction->first;
   }
 
+  // Determine the average depth of tree in the forest.  Just an interesting
+  // stat to look at.
   double average_depth() const {
     int sum = 0;
     for (const auto& tree : trees_) {
